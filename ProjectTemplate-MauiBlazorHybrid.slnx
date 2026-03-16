@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Infrastructure/">
+    <Project Path="CrossCutting/CrossCutting.csproj" Id="9daec568-5a4d-44f7-9be1-8131fb82c016" />
+    <Project Path="Data/Data.csproj" Id="40fcc317-3738-47ac-b602-2b0cc399ab43" />
+  </Folder>
+  <Folder Name="/_Solution-Items/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Nuget.config" />
+  </Folder>
+  <Folder Name="/_Tests/" />
+  <Project Path="AppUI/AppUI.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+  <Project Path="Domain/Domain.csproj" Id="d93612a4-878b-49db-a745-dca724da4d5f" />
+  <Project Path="Services/Services.csproj" Id="c87b7c02-9720-49d2-9c34-f605f3e56164" />
+</Solution>

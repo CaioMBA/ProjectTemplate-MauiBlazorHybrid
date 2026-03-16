@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<UseMaui>true</UseMaui>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" />
+		<PackageReference Include="Dapper.Contrib" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.Extensions.Http" />
+		<PackageReference Include="Microsoft.Maui.Controls" />
+		<PackageReference Include="NCrontab" />
+		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="Newtonsoft.Json.Bson" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Entities\" />
+	</ItemGroup>
+
+</Project>
