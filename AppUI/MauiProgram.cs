@@ -128,6 +128,6 @@ public static class MauiProgram
                                                 })
                                                 .Distinct();
 
-        return serviceCollection.AddStaticFiles(themes, languages);
+        return serviceCollection.AddStaticFiles(themes.Where(x => x != null)!, languages.Where(x => x != null)!);
     }
 }
