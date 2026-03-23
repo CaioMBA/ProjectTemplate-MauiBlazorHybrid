@@ -4,16 +4,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Data.DatabaseRepositories.DatabaseContexts;
 
 //TO USE MIGRATION|UPDATE DATABASE COMMAND COMMENT ANDROID TARGET ON APPUI.CSPROJ
-public class AppDbContext : DbContext
+public class AppDbContext(AppUtils? utils = null) : DbContext
 {
-    private readonly string _dbPath;
-
-    public AppDbContext(AppUtils? utils = null)
-    {
-        _dbPath = (utils is not null ?
-                    Path.Combine(utils.GetSystemFilePath(), "default_app.db")
-                        : Path.Combine(Directory.GetCurrentDirectory(), "default_app.db"));
-    }
+    private readonly string _dbPath = utils is not null
+        ? Path.Combine(utils.GetSystemFilePath(), "default_app.db")
+        : Path.Combine(Directory.GetCurrentDirectory(), "default_app.db");
 
     //public DbSet<LogEntity> Logs { get; set; } EXAMPLE
 

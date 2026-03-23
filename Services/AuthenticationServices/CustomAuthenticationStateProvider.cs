@@ -59,11 +59,11 @@ public class CustomAuthenticationStateProvider(
 
     private ClaimsPrincipal GetClaimsPrincipal(UserSessionModel userSession)
     {
-        var claimList = new List<Claim>()
-        {
+        List<Claim> claimList =
+        [
             new (ClaimTypes.Name, userSession.Name),
             new (ClaimTypes.Email, userSession.Email),
-        };
+        ];
 
         foreach (var role in userSession.Roles)
         {

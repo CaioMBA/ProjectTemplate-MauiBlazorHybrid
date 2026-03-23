@@ -56,7 +56,7 @@ public class DatabaseAccess
 
     public async Task<IEnumerable<IDictionary<string, object?>>?> ProcedureMultipleTables(string sQuery, object parameter, DataBaseConnectionModel connection)
     {
-        var objReturn = new List<Dictionary<string, object?>>();
+        List<Dictionary<string, object?>> objReturn = [];
 
         using var dbConnection = GetDatabaseConnection(connection);
 

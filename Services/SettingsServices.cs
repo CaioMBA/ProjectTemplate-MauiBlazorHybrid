@@ -38,7 +38,7 @@ public class SettingsServices : ISettingsServices
     private AppLanguageModel GetStartLanguage()
     {
         var preferenceLanguage = _utils.GetFromPreferences(PreferenceVariables.Language);
-        if (!String.IsNullOrWhiteSpace(preferenceLanguage))
+        if (!string.IsNullOrWhiteSpace(preferenceLanguage))
         {
             return preferenceLanguage.ToObject<AppLanguageModel>()
                 ?? throw new InvalidCastException("It was not possible to serialize the language configuration");
@@ -75,7 +75,7 @@ public class SettingsServices : ISettingsServices
     private AppThemeModel GetStartTheme()
     {
         var preferenceTheme = _utils.GetFromPreferences(PreferenceVariables.Theme);
-        if (!String.IsNullOrWhiteSpace(preferenceTheme))
+        if (!string.IsNullOrWhiteSpace(preferenceTheme))
         {
             return preferenceTheme.ToObject<AppThemeModel>()
                 ?? throw new InvalidCastException("It was not possible to serialize the theme configuration");

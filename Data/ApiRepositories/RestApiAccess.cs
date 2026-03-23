@@ -59,7 +59,7 @@ public class RestApiAccess(IHttpClientFactory httpFactory)
             }
         }
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-        if (!String.IsNullOrEmpty(ApiRequest.Body))
+        if (!string.IsNullOrEmpty(ApiRequest.Body))
         {
             request.Content = new StringContent(ApiRequest.Body, Encoding.UTF8, "application/json");
         }

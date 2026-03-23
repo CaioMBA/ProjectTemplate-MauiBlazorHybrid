@@ -65,7 +65,7 @@ public class AppUtils(
     public async Task<string?> GetFromSecurityStorage(SecurityStorageVariables Enum)
     {
         var cryptedValue = await SecureStorage.Default.GetAsync(Enum.ToString());
-        if (String.IsNullOrEmpty(cryptedValue))
+        if (string.IsNullOrEmpty(cryptedValue))
         {
             return null;
         }
@@ -107,7 +107,7 @@ public class AppUtils(
     public string? GetFromPreferences(PreferenceVariables Enum)
     {
         var cryptedValue = Preferences.Get(Enum.ToString(), null);
-        if (String.IsNullOrEmpty(cryptedValue))
+        if (string.IsNullOrEmpty(cryptedValue))
         {
             return null;
         }

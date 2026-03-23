@@ -144,7 +144,7 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
     {
         var duration = NotifyTime <= 5 ? ToastDuration.Short : ToastDuration.Long;
         var msg = $"{title}: {message}";
-        if (String.IsNullOrEmpty(title))
+        if (string.IsNullOrEmpty(title))
         {
             msg = message;
         }
@@ -174,7 +174,7 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
         return DriveInfo.GetDrives()
             .Where(d => d.IsReady
                         && d.DriveType == DriveType.Fixed
-                        && (String.IsNullOrWhiteSpace(name) || d.Name == name))
+                        && (string.IsNullOrWhiteSpace(name) || d.Name == name))
             .Sum(d => (available ? d.TotalFreeSpace : d.TotalSize));
     }
 
@@ -228,7 +228,7 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
 
                 File.Delete(tempDxDiagPath);
 
-                if (!String.IsNullOrWhiteSpace(cardname))
+                if (!string.IsNullOrWhiteSpace(cardname))
                 {
                     return cardname;
                 }

@@ -34,11 +34,11 @@ public class AccountServices(AppUtils utils, ISettingsServices settings) : IAcco
 
     public void SetUserPreferences(UserSessionModel userSession)
     {
-        if (!String.IsNullOrEmpty(userSession.Language))
+        if (!string.IsNullOrEmpty(userSession.Language))
         {
             _settings.ChangeLanguage(userSession.Language, true);
         }
-        if (!String.IsNullOrEmpty(userSession.Theme))
+        if (!string.IsNullOrEmpty(userSession.Theme))
         {
             _settings.ChangeTheme(userSession.Theme, true);
         }
