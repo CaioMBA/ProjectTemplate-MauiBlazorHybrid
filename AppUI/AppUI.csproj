@@ -91,4 +91,8 @@
 		<ProjectReference Include="..\CrossCutting\CrossCutting.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="wwwroot\assets\fonts\" />
+	</ItemGroup>
+
 </Project>

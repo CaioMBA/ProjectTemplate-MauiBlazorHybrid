@@ -1,17 +1,17 @@
-﻿@page "/not-found"
+@page "/forbidden"
 @attribute [AllowAnonymous]
 @implements IDisposable;
 
-<link rel="stylesheet" href="css/handler-pages/not-found.css" />
+<link rel="stylesheet" href="css/handler-pages/forbidden.css" />
 
-<div class="not-found-container">
-    <h1>404</h1>
-    <p>@(_languageModel.Paragraph)</p>
-    <a href="/">@(_languageModel.RedirectButton) @secondsRemaining</a>
+<div class="forbidden-container">
+    <h1>403</h1>
+    <p>@(language.Paragraph)</p>
+    <a href="/">@(language.RedirectButton) @secondsRemaining</a>
 </div>
 
 @code {
-    private NotFoundViewLanguageModel _languageModel => _settingsService.CurrentLanguage.NotFound;
+    private ForbiddenViewLanguageModel language => _settingsService.CurrentLanguage.Forbidden;
     private Timer? timer;
     private int secondsRemaining = 5;
 
@@ -35,6 +35,5 @@
     public void Dispose()
     {
         timer?.Dispose();
-        timer = null;
     }
 }

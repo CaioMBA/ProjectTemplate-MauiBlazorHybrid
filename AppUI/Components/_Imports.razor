@@ -4,7 +4,10 @@
 @using Domain.Interfaces.ApplicationConfigurationInterfaces
 @using Domain.Interfaces.StateInterfaces
 @using Domain.Models.ApplicationConfigurationModels
+@using Domain.Models.ViewModels
 @using Domain.Models.ViewModels.ViewLanguageModels
+@using Domain.Models.ViewModels.ViewLanguageModels.LayoutViewLanguageModels
+@using Domain.Models.ViewModels.ViewLanguageModels.HandlerViewLanguageModels
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
@@ -16,6 +19,8 @@
 @using AppUI.Components.Layout
 @using AppUI.Components.Pages.HandlerPages
 @using Microsoft.AspNetCore.Authorization
+@using Services.AuthenticationServices
+@using System.ComponentModel
 @inject IRefreshViewState _refreshViewState;
 @inject AppUtils _utils;
 @inject AuthenticationStateProvider _authStateProvider;

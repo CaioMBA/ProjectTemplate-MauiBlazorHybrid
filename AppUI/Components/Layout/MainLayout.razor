@@ -1,4 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable;
+
+<link rel="stylesheet" href="css/Skins/@(_settingsService.CurrentTheme.Name).css" />
 
 <div class="page">
     <div class="sidebar">
@@ -7,7 +10,45 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <div class="custom_dropdown-container">
+                <button class="custom_dropdown-btn" @onclick='() => ToggleDropdown("theme")'>
+                    <img src="assets/images/themes/@(_settingsService.CurrentTheme.Icon)" />
+                    @(_settingsService.CurrentTheme.Name)
+                </button>
+
+                @if (isSkinDropdownOpen)
+                {
+                    <ul class="custom_dropdown-menu">
+                        @foreach (var theme in availableThemes)
+                        {
+                            <li @onclick='() => ChangeDropdownSelectedValue("theme", theme.Name!)'>
+                                <img src="assets/images/themes/@theme.Icon" />
+                                <span>@theme.Name</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div class="custom_dropdown-container">
+                <button class="custom_dropdown-btn" @onclick='() => ToggleDropdown("language")'>
+                    <img src="assets/images/languages/@(_settingsService.CurrentLanguage.Flag)" />
+                    @(_settingsService.CurrentLanguage.Name)
+                </button>
+
+                @if (isLanguageDropdownOpen)
+                {
+                    <ul class="custom_dropdown-menu">
+                        @foreach (var language in availableLanguages)
+                        {
+                            <li @onclick='() => ChangeDropdownSelectedValue("language", language.Code!)'>
+                                <img src="assets/images/languages/@language.Flag" />
+                                <span>@language.Name</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <button @onclick="@(async () => await LogOut())" class="btn">@(language.LogoutButton)</button>
         </div>
 
         <article class="content px-4">
@@ -15,3 +56,88 @@
         </article>
     </main>
 </div>
+
+<script src="js/MainLayout.js"></script>
+
+@code {
+    private MainLayoutViewLanguageModel language => _settingsService.CurrentLanguage.MainLayout;
+    private IEnumerable<AppLanguageModel> availableLanguages => _settingsService.AvailableLanguages();
+    private IEnumerable<AppThemeModel> availableThemes => _settingsService.AvailableThemes();
+    private bool isLanguageDropdownOpen = false;
+    private bool isSkinDropdownOpen = false;
+
+    private void ToggleDropdown(string ID)
+    {
+        switch (ID.ToLower().Trim())
+        {
+            case "theme":
+                isSkinDropdownOpen = !isSkinDropdownOpen;
+                break;
+
+            case "language":
+                isLanguageDropdownOpen = !isLanguageDropdownOpen;
+                break;
+
+            default:
+                break;
+        }
+
+        UpdateUI();
+    }
+    private void ChangeDropdownSelectedValue(string DropdownID, string newValue)
+    {
+        switch (DropdownID.ToLower().Trim())
+        {
+            case "theme":
+                _settingsService.ChangeTheme(newValue, false);
+                break;
+
+            case "language":
+                _settingsService.ChangeLanguage(newValue, false);
+                break;
+
+            default:
+                break;
+        }
+
+        ToggleDropdown(DropdownID);
+    }
+
+    private async Task LogOut()
+    {
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)_authStateProvider;
+        await customAuthStateProvider.UpdateAuthenticationState(null);
+    }
+
+    protected override void OnInitialized()
+    {
+        _settingsService.OnLanguageChanged += UpdateUI;
+        _settingsService.OnThemeChanged += UpdateUI;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await _jsRuntime.InvokeVoidAsync("preventF5");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+    }
+
+    private async void UpdateUI()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _settingsService.OnLanguageChanged -= UpdateUI;
+        _settingsService.OnThemeChanged -= UpdateUI;
+    }
+}

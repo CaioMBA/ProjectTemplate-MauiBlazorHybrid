@@ -1,5 +1,19 @@
 ﻿@page "/"
+@attribute [Authorize]
 
-<h1>Hello, world!</h1>
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, @(context.User.Identity?.Name)</h1>
+    </Authorized>
+    <NotAuthorized>
+        <h1>Hello, anonymous</h1>
+    </NotAuthorized>
+</AuthorizeView>
 
-Welcome to your new app.
+@(language.Welcome)
+
+<button class="btn btn-success" @onclick='() => _navigation.NavigateTo("/counter", false)'>Counter</button>
+
+@code {
+    HomeViewLanguageModel language => _settingsService.CurrentLanguage.Home;
+}

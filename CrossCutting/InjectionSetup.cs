@@ -53,6 +53,7 @@ public static class InjectionSetup
 
         serviceCollection.AddDistributedMemoryCache();
         serviceCollection.AddSingleton<AppUtils>();
+        serviceCollection.AddSingleton<ILanguageDictionaryMapping, LanguageDictionaryMapping>();
         serviceCollection.AddAutoMapper(options =>
         {
             options.AddProfile<EntityToModelMapping>();

@@ -1,4 +1,6 @@
-﻿namespace Domain.Models.ViewModels.ViewLanguageModels;
+﻿using Domain.Models.ViewModels.ViewLanguageModels;
+
+namespace Domain.Models.ViewModels.ViewLanguageModels.HandlerViewLanguageModels;
 
 public record NotFoundViewLanguageModel : ViewLanguageModel
 {

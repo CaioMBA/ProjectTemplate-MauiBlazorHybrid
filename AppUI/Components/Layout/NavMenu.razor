@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@implements IDisposable;
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">AppUI</a>
     </div>
@@ -10,7 +12,7 @@
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> @(language.HomeButton)
             </NavLink>
         </div>
         <div class="nav-item px-3">
@@ -25,3 +27,34 @@
         </div>
     </nav>
 </div>
+
+@code {
+    private NavMenuViewLanguageModel language => _settingsService.CurrentLanguage.NavMenu;
+
+    protected override void OnInitialized()
+    {
+        _settingsService.OnLanguageChanged += UpdateUI;
+        _settingsService.OnThemeChanged += UpdateUI;
+        _refreshViewState.PropertyChanged += OnPropertyChanged;
+    }
+
+    private async void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(_refreshViewState.IsRefreshing) && _refreshViewState.IsRefreshing)
+        {
+            UpdateUI();
+        }
+    }
+
+    private async void UpdateUI()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _settingsService.OnLanguageChanged -= UpdateUI;
+        _settingsService.OnThemeChanged -= UpdateUI;
+        _refreshViewState.PropertyChanged -= OnPropertyChanged;
+    }
+}

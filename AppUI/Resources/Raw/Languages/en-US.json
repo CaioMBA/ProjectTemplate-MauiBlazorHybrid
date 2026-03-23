@@ -1,14 +1,35 @@
 {
   "Name": "English [ USA ]",
-  "Home": {
-    "Title": "Home",
-    "Description": "Start Page of {AppName}",
-    "Welcome": "Welcome to {AppName}"
+  "NavMenu": {
+    "Title": "Navigation Menu",
+    "Description": "Main navigation menu for {AppName}",
+    "HomeButton": "Home"
+  },
+  "MainLayout": {
+    "Title": "Main Layout",
+    "Description": "Main layout actions and controls of {AppName}",
+    "LogoutButton": "Logout"
   },
   "NotFound": {
     "Title": "Not Found",
     "Description": "Page of redirection when {AppName} has no content on the location",
-    "Paragraph": "Oops! The page you are looking for does not exist.}",
+    "Paragraph": "Oops! The page you are looking for does not exist.",
     "RedirectButton": "Press to go back [ Home ] - Automatic in"
+  },
+  "Forbidden": {
+    "Title": "Forbidden",
+    "Description": "Page shown when access to a resource is denied in {AppName}",
+    "Paragraph": "Oops! You do not have permission to access this page.",
+    "RedirectButton": "Press to go back [ Home ] - Automatic in"
+  },
+  "Loading": {
+    "Title": "Loading",
+    "Description": "Loading page for {AppName}",
+    "Loading": "Loading..."
+  },
+  "Home": {
+    "Title": "Home",
+    "Description": "Start Page of {AppName}",
+    "Welcome": "Welcome to {AppName}"
   }
 }

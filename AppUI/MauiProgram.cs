@@ -31,8 +31,8 @@ public static class MauiProgram
         builder.Services
             .AddAppSettings()
             .AddPlatformServiceDependencies()
-            .AddAssets().GetAwaiter().GetResult()
             .AddUtilities()
+            .AddAssets().GetAwaiter().GetResult()
             .AddHttpClients()
             .AddDatabaseClients().GetAwaiter().GetResult()
             .AddServices()
@@ -84,7 +84,9 @@ public static class MauiProgram
 
     private static async Task<IServiceCollection> AddAssets(this IServiceCollection serviceCollection)
     {
-        var assetService = serviceCollection.BuildServiceProvider().GetRequiredService<IPlatformSpecificServices>();
+        using var serviceProvider = serviceCollection.BuildServiceProvider();
+        var assetService = serviceProvider.GetRequiredService<IPlatformSpecificServices>();
+        var languageDictionaryMapping = serviceProvider.GetRequiredService<ILanguageDictionaryMapping>();
         IEnumerable<string> assets = await assetService.ListAssetsAsync();
 
         IEnumerable<AppLanguageModel?> languages = assets.Where(x => x.Trim().StartsWith("language", StringComparison.OrdinalIgnoreCase)
@@ -92,6 +94,7 @@ public static class MauiProgram
                                                             .Select(file =>
                                                             {
                                                                 string content = assetService.ReadAssetContent(file);
+                                                                content = languageDictionaryMapping.ReplaceTokens(content);
                                                                 var languageModel = content.ToObject<AppLanguageModel>();
                                                                 if (languageModel != null)
                                                                 {
