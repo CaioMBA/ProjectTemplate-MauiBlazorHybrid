@@ -10,9 +10,9 @@ public interface ISettingsServices
     AppLanguageModel CurrentLanguage { get; }
     AppThemeModel CurrentTheme { get; }
 
-    List<AppLanguageModel> AvailableLanguages();
+    IEnumerable<AppLanguageModel> AvailableLanguages();
     void ChangeLanguage(string languageCode, bool setToPreferences);
 
-    List<AppThemeModel> AvailableThemes();
+    IEnumerable<AppThemeModel> AvailableThemes();
     void ChangeTheme(string theme, bool setToPreferences);
 }

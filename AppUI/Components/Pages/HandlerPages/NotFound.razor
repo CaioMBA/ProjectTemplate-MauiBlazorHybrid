@@ -1,0 +1,40 @@
+﻿@page "/not-found"
+@attribute [AllowAnonymous]
+@implements IDisposable;
+
+<link rel="stylesheet" href="css/AppHandling/not-found.css" />
+
+<div class="not-found-container">
+    <h1>404</h1>
+    <p>@(_languageModel.Paragraph)</p>
+    <a href="/">@(_languageModel.RedirectButton) @secondsRemaining</a>
+</div>
+
+@code {
+    private NotFoundViewLanguageModel _languageModel => _settingsService.CurrentLanguage.NotFound;
+    private Timer? timer;
+    private int secondsRemaining = 5;
+
+    protected override void OnInitialized()
+    {
+        timer = new Timer(_ =>
+        {
+            if (secondsRemaining > 0)
+            {
+                secondsRemaining--;
+                InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                InvokeAsync(() => _navigation.NavigateTo("/"));
+                timer?.Dispose();
+            }
+        }, null, 1000, 1000);
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+        timer = null;
+    }
+}

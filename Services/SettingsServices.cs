@@ -10,8 +10,8 @@ namespace Services;
 public class SettingsServices : ISettingsServices
 {
     private readonly AppUtils _utils;
-    private readonly List<AppLanguageModel> _availableLanguages;
-    private readonly List<AppThemeModel> _availableThemes;
+    private readonly IEnumerable<AppLanguageModel> _availableLanguages;
+    private readonly IEnumerable<AppThemeModel> _availableThemes;
 
     public event Action? OnLanguageChanged;
     public event Action? OnThemeChanged;
@@ -21,8 +21,8 @@ public class SettingsServices : ISettingsServices
 
     public SettingsServices(
         AppUtils utils,
-        List<AppLanguageModel> availableLanguages,
-        List<AppThemeModel> availableThemes)
+        IEnumerable<AppLanguageModel> availableLanguages,
+        IEnumerable<AppThemeModel> availableThemes)
     {
         _utils = utils;
         _availableLanguages = availableLanguages;
@@ -33,7 +33,7 @@ public class SettingsServices : ISettingsServices
     }
 
     #region Language
-    public List<AppLanguageModel> AvailableLanguages() => _availableLanguages;
+    public IEnumerable<AppLanguageModel> AvailableLanguages() => _availableLanguages;
 
     private AppLanguageModel GetStartLanguage()
     {
@@ -86,7 +86,7 @@ public class SettingsServices : ISettingsServices
             ?? throw new InvalidOperationException("No themes were configured to this application");
     }
 
-    public List<AppThemeModel> AvailableThemes() => _availableThemes;
+    public IEnumerable<AppThemeModel> AvailableThemes() => _availableThemes;
 
     public void ChangeTheme(string theme, bool setToPreferences)
     {

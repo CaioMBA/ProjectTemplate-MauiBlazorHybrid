@@ -1,0 +1,23 @@
+@inherits LayoutComponentBase;
+@implements IDisposable;
+
+@Body
+
+@code {
+    protected override void OnInitialized()
+    {
+        _settingsService.OnLanguageChanged += UpdateUI;
+        _settingsService.OnThemeChanged += UpdateUI;
+    }
+
+    private async void UpdateUI()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _settingsService.OnLanguageChanged -= UpdateUI;
+        _settingsService.OnThemeChanged -= UpdateUI;
+    }
+}

@@ -8,10 +8,10 @@ using Domain.Interfaces.ApplicationConfigurationInterfaces;
 using Domain.Mappings;
 using Domain.Models.ApplicationConfigurationModels;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Services;
 using Services.AuthenticationServices;
@@ -41,12 +41,16 @@ public static class InjectionSetup
 
     public static IServiceCollection AddUtilities(this IServiceCollection serviceCollection)
     {
-        JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+        JsonSerializerSettings jsonSerializerSettings = new()
         {
             Formatting = Formatting.None,
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             NullValueHandling = NullValueHandling.Include
         };
+
+        JsonConvert.DefaultSettings = () => jsonSerializerSettings;
+        JsonSerializer.CreateDefault(jsonSerializerSettings).Converters.Add(new StringEnumConverter());
+
         serviceCollection.AddDistributedMemoryCache();
         serviceCollection.AddSingleton<AppUtils>();
         serviceCollection.AddAutoMapper(options =>

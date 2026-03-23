@@ -67,9 +67,23 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Maui.Controls" />
+	  <Content Remove="Resources\Raw\appsettings.json" />
+	  <Content Remove="Resources\Raw\Languages\en-US.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Camera.MAUI" />
+		<PackageReference Include="Camera.MAUI.ZXing" />
+		<PackageReference Include="CommunityToolkit.Maui" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+       <PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
+		<PackageReference Include="Plugin.Fingerprint" />
+		<PackageReference Include="Plugin.LocalNotification" />
 	</ItemGroup>
 
 	<ItemGroup>

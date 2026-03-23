@@ -2,13 +2,32 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:AppUI"
+             xmlns:states="clr-namespace:AppUI.States.ViewStates"
              xmlns:components="clr-namespace:AppUI.Components"
-             x:Class="AppUI.MainPage">
+             xmlns:cv="clr-namespace:Camera.MAUI;assembly=Camera.MAUI"
+             x:Class="AppUI.MainPage"
+             x:DataType="states:RefreshViewState">
 
-    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
-        <BlazorWebView.RootComponents>
-            <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />
-        </BlazorWebView.RootComponents>
-    </BlazorWebView>
+    <ContentPage.Resources>
+        <DataTemplate x:Key="WithRefreshTemplate">
+            <RefreshView IsRefreshing="{Binding IsRefreshing}" Refreshing="OnRefresh">
+                <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+                    <BlazorWebView.RootComponents>
+                        <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />
+                    </BlazorWebView.RootComponents>
+                </BlazorWebView>
+            </RefreshView>
+        </DataTemplate>
+
+        <DataTemplate x:Key="WithoutRefreshTemplate">
+            <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+                <BlazorWebView.RootComponents>
+                    <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />
+                </BlazorWebView.RootComponents>
+            </BlazorWebView>
+        </DataTemplate>
+    </ContentPage.Resources>
+
+    <ContentView x:Name="RootContentView" />
 
 </ContentPage>
