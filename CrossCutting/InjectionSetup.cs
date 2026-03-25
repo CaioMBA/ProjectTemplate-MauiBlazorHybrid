@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using Polly;
 using Services;
 using Services.AuthenticationServices;
 using System.Net;
@@ -74,6 +75,7 @@ public static class InjectionSetup
                     c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
                     c.Timeout = Timeout.InfiniteTimeSpan;
                 });
+
                 c.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
                     AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
@@ -83,6 +85,14 @@ public static class InjectionSetup
                     MaxConnectionsPerServer = int.MaxValue,
                     UseCookies = true,
                     CookieContainer = defaultCookieContainer
+                });
+
+                c.AddStandardResilienceHandler(options =>
+                {
+                    options.Retry.MaxRetryAttempts = 3;
+                    options.Retry.Delay = TimeSpan.FromSeconds(3);
+                    options.Retry.BackoffType = DelayBackoffType.Exponential;
+                    options.Retry.UseJitter = true;
                 });
             });
 
