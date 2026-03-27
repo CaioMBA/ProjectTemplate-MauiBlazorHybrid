@@ -19,6 +19,12 @@ namespace Data.DatabaseRepositories;
 public class DatabaseAccess(AppUtils utils)
 {
     private readonly AppUtils _utils = utils;
+    private DataBaseConnectionModel? _scopedConnection;
+
+    public void Configure(string dataBaseId)
+    {
+        _scopedConnection = _utils.GetDataBase(dataBaseId);
+    }
 
     private static async Task OpenConnectionAsync(IDbConnection databaseConnection, CancellationToken cancellationToken = default)
     {
@@ -58,32 +64,50 @@ public class DatabaseAccess(AppUtils utils)
         };
     }
 
-    public async Task<T?> ProcedureFirstOrDefaultAsync<T>(string query, object parameter, DataBaseConnectionModel connection)
+    private DataBaseConnectionModel ResolveConnectionModel()
     {
-        return await ExecQueryFirstOrDefault<T>(query, parameter, connection, CommandType.StoredProcedure);
+        return _scopedConnection
+            ?? throw new InvalidOperationException("DatabaseAccess is not configured. Call Configure with a valid database id before executing queries.");
     }
 
-    public async Task<IEnumerable<T>?> Procedure<T>(string query, object parameter, DataBaseConnectionModel connection)
+    private async Task<(IDbConnection Connection, bool ShouldDispose)> ResolveExecutionConnectionAsync(
+        IDbTransaction? transaction = null,
+        CancellationToken cancellationToken = default)
     {
-        return await ExecQuery<T>(query, parameter, connection, CommandType.StoredProcedure);
+        if (transaction?.Connection is IDbConnection transactionConnection)
+        {
+            await OpenConnectionAsync(transactionConnection, cancellationToken);
+            return (transactionConnection, false);
+        }
+
+        var dbConnection = GetDatabaseConnection(ResolveConnectionModel());
+        await OpenConnectionAsync(dbConnection, cancellationToken);
+        return (dbConnection, true);
     }
 
-    public IAsyncEnumerable<T> ProcedureStream<T>(string query, object? parameter, DataBaseConnectionModel connection, CancellationToken cancellationToken = default)
+    public async Task<T?> ProcedureFirstOrDefaultAsync<T>(string query, object? parameter, IDbTransaction? transaction = null)
     {
-        return ExecQueryStream<T>(query, parameter, connection, CommandType.StoredProcedure, cancellationToken);
+        return await ExecQueryFirstOrDefault<T>(query, parameter, CommandType.StoredProcedure, transaction);
     }
 
-    public async Task<IEnumerable<IDictionary<string, object?>>?> ProcedureMultipleTables(string query, object parameter, DataBaseConnectionModel connection)
+    public async Task<IEnumerable<T>?> Procedure<T>(string query, object? parameter, IDbTransaction? transaction = null)
+    {
+        return await ExecQuery<T>(query, parameter, CommandType.StoredProcedure, transaction);
+    }
+
+    public IAsyncEnumerable<T> ProcedureStream<T>(string query, object? parameter, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
+    {
+        return ExecQueryStream<T>(query, parameter, CommandType.StoredProcedure, transaction, cancellationToken);
+    }
+
+    public async Task<IEnumerable<IDictionary<string, object?>>?> ProcedureMultipleTables(string query, object? parameter, IDbTransaction? transaction = null)
     {
         List<Dictionary<string, object?>> objReturn = [];
-
-        using var dbConnection = GetDatabaseConnection(connection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
 
         try
         {
-            await OpenConnectionAsync(dbConnection);
-
-            using var result = await dbConnection.QueryMultipleAsync(query, parameter, commandType: CommandType.StoredProcedure);
+            using var result = await dbConnection.QueryMultipleAsync(query, parameter, transaction, commandType: CommandType.StoredProcedure);
 
             do
             {
@@ -101,31 +125,38 @@ public class DatabaseAccess(AppUtils utils)
             Console.WriteLine($"Error: {ex.Message}");
             return null;
         }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
 
         return objReturn;
     }
 
 
-    public async Task<T?> QueryFirstOrDefault<T>(string query, object? parameter, DataBaseConnectionModel connection)
+    public async Task<T?> QueryFirstOrDefault<T>(string query, object? parameter, IDbTransaction? transaction = null)
     {
-        return await ExecQueryFirstOrDefault<T>(query, parameter, connection);
+        return await ExecQueryFirstOrDefault<T>(query, parameter, transaction: transaction);
     }
 
-    public async Task<IEnumerable<T>?> Query<T>(string query, object? parameter, DataBaseConnectionModel connection)
+    public async Task<IEnumerable<T>?> Query<T>(string query, object? parameter, IDbTransaction? transaction = null)
     {
-        return await ExecQuery<T>(query, parameter, connection);
+        return await ExecQuery<T>(query, parameter, transaction: transaction);
     }
 
-    public IAsyncEnumerable<T> QueryStream<T>(string query, object? parameter, DataBaseConnectionModel connection, CancellationToken cancellationToken = default)
+    public IAsyncEnumerable<T> QueryStream<T>(string query, object? parameter, IDbTransaction? transaction = null, CancellationToken cancellationToken = default)
     {
-        return ExecQueryStream<T>(query, parameter, connection, cancellationToken: cancellationToken);
+        return ExecQueryStream<T>(query, parameter, transaction: transaction, cancellationToken: cancellationToken);
     }
 
     #region Cached Methods
     public async Task<IReadOnlyList<T>> QueryPagedCachedAsync<T>(
         string query,
         object? parameter,
-        DataBaseConnectionModel connection,
+        IDbTransaction? transaction = null,
         int page = 1,
         int pageSize = 100,
         TimeSpan? cacheExpiration = null,
@@ -134,7 +165,7 @@ public class DatabaseAccess(AppUtils utils)
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
-        var queryKey = BuildQueryCacheKey(query, parameter, connection);
+        var queryKey = BuildQueryCacheKey(query, parameter, ResolveConnectionModel());
         var pageKey = BuildPageCacheKey(queryKey, page, pageSize);
 
         var cachedPage = await _utils.GetFromCache<List<T>>(pageKey);
@@ -152,7 +183,7 @@ public class DatabaseAccess(AppUtils utils)
                 var currentPage = 1;
                 var currentPageItems = new List<T>(pageSize);
 
-                await foreach (var item in QueryStream<T>(query, parameter, connection))
+                await foreach (var item in QueryStream<T>(query, parameter, transaction, cancellationToken))
                 {
                     currentPageItems.Add(item);
 
@@ -209,20 +240,25 @@ public class DatabaseAccess(AppUtils utils)
     #endregion Cached Methods
 
     #region BaseMethods
-    private async Task<IEnumerable<T>?> ExecQuery<T>(string query, object? parameter, DataBaseConnectionModel connection, CommandType? type = null)
+    private async Task<IEnumerable<T>?> ExecQuery<T>(string query, object? parameter, CommandType? type = null, IDbTransaction? transaction = null)
     {
-        using var dbConnection = GetDatabaseConnection(connection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
 
         try
         {
-            await OpenConnectionAsync(dbConnection);
-
-            return await dbConnection.QueryAsync<T>(query, parameter, commandType: type);
+            return await dbConnection.QueryAsync<T>(query, parameter, transaction, commandType: type);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
             return null;
+        }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
         }
 
     }
@@ -230,83 +266,131 @@ public class DatabaseAccess(AppUtils utils)
     private async IAsyncEnumerable<T> ExecQueryStream<T>(
         string query,
         object? parameter,
-        DataBaseConnectionModel connection,
         CommandType? type = null,
+        IDbTransaction? transaction = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var dbConnection = GetDatabaseConnection(connection);
-
-        await OpenConnectionAsync(dbConnection, cancellationToken);
-
-        var command = new CommandDefinition(query, parameter, commandType: type, cancellationToken: cancellationToken);
-        using var reader = await dbConnection.ExecuteReaderAsync(command);
-        var parser = reader.GetRowParser<T>();
-
-        if (reader is DbDataReader dbDataReader)
-        {
-            while (await dbDataReader.ReadAsync(cancellationToken))
-            {
-                yield return parser(dbDataReader);
-            }
-
-            yield break;
-        }
-
-        while (reader.Read())
-        {
-            yield return parser(reader);
-        }
-    }
-
-    private async Task<T?> ExecQueryFirstOrDefault<T>(string query, object? parameter, DataBaseConnectionModel connection, CommandType? type = null)
-    {
-        using var dbConnection = GetDatabaseConnection(connection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction, cancellationToken);
 
         try
         {
-            await OpenConnectionAsync(dbConnection);
+            var command = new CommandDefinition(query, parameter, transaction, commandType: type, cancellationToken: cancellationToken);
+            using var reader = await dbConnection.ExecuteReaderAsync(command);
+            var parser = reader.GetRowParser<T>();
 
-            return await dbConnection.QueryFirstOrDefaultAsync<T>(query, parameter, commandType: type);
+            if (reader is DbDataReader dbDataReader)
+            {
+                while (await dbDataReader.ReadAsync(cancellationToken))
+                {
+                    yield return parser(dbDataReader);
+                }
+
+                yield break;
+            }
+
+            while (reader.Read())
+            {
+                yield return parser(reader);
+            }
+        }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
+    }
+
+    private async Task<T?> ExecQueryFirstOrDefault<T>(string query, object? parameter, CommandType? type = null, IDbTransaction? transaction = null)
+    {
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
+
+        try
+        {
+            return await dbConnection.QueryFirstOrDefaultAsync<T>(query, parameter, transaction, commandType: type);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
             return default;
         }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
 
     }
 
-    public async Task<T> Read<T>(object Id, DataBaseConnectionModel connection) where T : class
+    public async Task<T> Read<T>(object Id, IDbTransaction? transaction = null) where T : class
     {
-        using var dbConnection = GetDatabaseConnection(connection);
-        await OpenConnectionAsync(dbConnection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
 
-        return await dbConnection.GetAsync<T>(Id);
+        try
+        {
+            return await dbConnection.GetAsync<T>(Id, transaction);
+        }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
-    public async Task<bool> Update<T>(T Obj, DataBaseConnectionModel connection) where T : class
+    public async Task<bool> Update<T>(T Obj, IDbTransaction? transaction = null) where T : class
     {
-        using var dbConnection = GetDatabaseConnection(connection);
-        await OpenConnectionAsync(dbConnection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
 
-        return await dbConnection.UpdateAsync<T>(Obj);
+        try
+        {
+            return await dbConnection.UpdateAsync<T>(Obj, transaction);
+        }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
-    public async Task<object> Insert<T>(T Obj, DataBaseConnectionModel connection) where T : class
+    public async Task<object> Insert<T>(T Obj, IDbTransaction? transaction = null) where T : class
     {
-        using var dbConnection = GetDatabaseConnection(connection);
-        await OpenConnectionAsync(dbConnection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
 
-        return await dbConnection.InsertAsync(Obj);
-
+        try
+        {
+            return await dbConnection.InsertAsync(Obj, transaction);
+        }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
 
-    public async Task<bool> Delete<T>(T Obj, DataBaseConnectionModel connection) where T : class
+    public async Task<bool> Delete<T>(T Obj, IDbTransaction? transaction = null) where T : class
     {
-        using var dbConnection = GetDatabaseConnection(connection);
-        await OpenConnectionAsync(dbConnection);
+        var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
 
-        return await dbConnection.DeleteAsync(Obj);
+        try
+        {
+            return await dbConnection.DeleteAsync(Obj, transaction);
+        }
+        finally
+        {
+            if (shouldDispose)
+            {
+                dbConnection.Dispose();
+            }
+        }
     }
     #endregion BaseMethods
 }
