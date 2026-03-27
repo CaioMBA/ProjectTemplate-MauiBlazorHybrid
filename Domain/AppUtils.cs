@@ -2,6 +2,7 @@
 using Domain.Extensions;
 using Domain.Interfaces.ApplicationConfigurationInterfaces;
 using Domain.Models.ApplicationConfigurationModels;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
@@ -11,6 +12,7 @@ namespace Domain;
 public class AppUtils(
     IOptionsMonitor<AppSettingsModel> options,
     IPlatformSpecificServices platformService,
+    IDistributedCache cache,
     ILogger<AppUtils> logger)
 {
     private readonly AppSettingsModel _appSettings = options.CurrentValue;
@@ -143,6 +145,27 @@ public class AppUtils(
         Preferences.Clear();
     }
     #endregion Preferences
+
+    #region Cache
+    public async Task SetToCache(string key, object value, TimeSpan? absoluteExpirationRelativeToNow = null)
+    {
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow ?? TimeSpan.FromHours(1)
+        };
+        await cache.SetAsync(key, value.ToBytes().Compress(), cacheOptions);
+    }
+
+    public async Task<T?> GetFromCache<T>(string key)
+    {
+        var cachedData = await cache.GetAsync(key);
+        if (cachedData == null)
+        {
+            return default;
+        }
+        return cachedData.Decompress().ToObject<T>();
+    }
+    #endregion Cache
 
     public string GetSystemFilePath() => FileSystem.AppDataDirectory;
 

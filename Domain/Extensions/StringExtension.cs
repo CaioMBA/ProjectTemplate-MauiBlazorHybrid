@@ -9,9 +9,15 @@ public static class StringExtension
 {
     public static string Capitalize(this string str)
     {
-        var first = str.Substring(0, 1);
-        var rest = str.Substring(1);
-        return $"{first.ToUpper()}{rest}";
+        ArgumentNullException.ThrowIfNull(str);
+
+        if (str.Length == 0)
+            return str;
+
+        if (str.Length == 1)
+            return str.ToUpperInvariant();
+
+        return char.ToUpperInvariant(str[0]) + str[1..];
     }
 
     public static bool ToInteger(this string str, out int result)
@@ -26,76 +32,68 @@ public static class StringExtension
 
     public static string LimitStringLength(this string str, int Limit)
     {
-        if (Limit > str.Length)
+        ArgumentNullException.ThrowIfNull(str);
+
+        if (Limit < 0)
+            throw new ArgumentOutOfRangeException(nameof(Limit));
+
+        if (Limit >= str.Length)
             return str;
 
-        return str.Substring(0, Limit);
+        return str[..Limit];
     }
 
     public static byte[] ToBytes(this string str)
     {
+        ArgumentNullException.ThrowIfNull(str);
+
         return Encoding.UTF8.GetBytes(str);
     }
 
     public static byte[] HexToBytes(this string hex)
     {
-        if (hex.Length % 2 != 0)
-            throw new ArgumentException("Invalid length for a hex string.");
+        ArgumentNullException.ThrowIfNull(hex);
 
-        byte[] bytes = new byte[hex.Length / 2];
-        for (int i = 0; i < hex.Length; i += 2)
-        {
-            bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
-        }
-        return bytes;
+        return Convert.FromHexString(hex);
     }
     public static string ToSHA256(this string str)
     {
-        using var sha256 = SHA256.Create();
+        ArgumentNullException.ThrowIfNull(str);
         var bytes = Encoding.UTF8.GetBytes(str);
-        var hashBytes = sha256.ComputeHash(bytes);
+        var hashBytes = SHA256.HashData(bytes);
 
-        var builder = new StringBuilder();
-        for (int i = 0; i < hashBytes.Length; i++)
-        {
-            builder.Append(hashBytes[i].ToString("x2")); // Convert byte to hexadecimal string
-        }
-        return builder.ToString();
+        return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
     public static string ToBase64(this string str)
     {
-        try
-        {
-            var textoAsBytes = UTF8Encoding.UTF8.GetBytes(str);
-            var resultado = Convert.ToBase64String(textoAsBytes);
-            return resultado;
-        }
-        catch (Exception)
-        {
-            throw new Exception("Error converting to base64");
-        }
+        ArgumentNullException.ThrowIfNull(str);
+
+        var textoAsBytes = UTF8Encoding.UTF8.GetBytes(str);
+        var resultado = Convert.ToBase64String(textoAsBytes);
+        return resultado;
     }
     public static string FromBase64(this string str)
     {
-        try
-        {
-            var textoAsBytes = Convert.FromBase64String(str);
-            var resultado = UTF8Encoding.UTF8.GetString(textoAsBytes);
-            return resultado;
-        }
-        catch (Exception)
-        {
-            throw new Exception("Error converting from base64");
-        }
+        ArgumentNullException.ThrowIfNull(str);
+
+        var textoAsBytes = Convert.FromBase64String(str);
+        var resultado = UTF8Encoding.UTF8.GetString(textoAsBytes);
+        return resultado;
     }
     public static bool IsBase64String(this string s)
     {
+        if (string.IsNullOrWhiteSpace(s))
+            return false;
+
         s = s.Trim();
         return (s.Length % 4 == 0) && Regex.IsMatch(s, @"^[a-zA-Z0-9\+/]*={0,3}$", RegexOptions.None);
     }
 
     public static T? ToObject<T>(this string str)
     {
+        if (string.IsNullOrWhiteSpace(str))
+            return default;
+
         return JsonConvert.DeserializeObject<T>(str);
     }
 

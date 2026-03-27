@@ -1,7 +1,9 @@
 ﻿using AdoNetCore.AseClient;
 using Dapper;
 using Dapper.Contrib.Extensions;
+using Domain;
 using Domain.Enums;
+using Domain.Extensions;
 using Domain.Models.ApplicationConfigurationModels;
 using FirebirdSql.Data.FirebirdClient;
 using Microsoft.Data.SqlClient;
@@ -14,8 +16,10 @@ using System.Runtime.CompilerServices;
 
 namespace Data.DatabaseRepositories;
 
-public class DatabaseAccess
+public class DatabaseAccess(AppUtils utils)
 {
+    private readonly AppUtils _utils = utils;
+
     private static async Task OpenConnectionAsync(IDbConnection databaseConnection, CancellationToken cancellationToken = default)
     {
         if (databaseConnection.State == ConnectionState.Open)
@@ -54,22 +58,22 @@ public class DatabaseAccess
         };
     }
 
-    public async Task<T?> ProcedureFirstOrDefaultAsync<T>(string sQuery, object parameter, DataBaseConnectionModel connection)
+    public async Task<T?> ProcedureFirstOrDefaultAsync<T>(string query, object parameter, DataBaseConnectionModel connection)
     {
-        return await ExecQueryFirstOrDefault<T>(sQuery, parameter, connection, CommandType.StoredProcedure);
+        return await ExecQueryFirstOrDefault<T>(query, parameter, connection, CommandType.StoredProcedure);
     }
 
-    public async Task<IEnumerable<T>?> Procedure<T>(string sQuery, object parameter, DataBaseConnectionModel connection)
+    public async Task<IEnumerable<T>?> Procedure<T>(string query, object parameter, DataBaseConnectionModel connection)
     {
-        return await ExecQuery<T>(sQuery, parameter, connection, CommandType.StoredProcedure);
+        return await ExecQuery<T>(query, parameter, connection, CommandType.StoredProcedure);
     }
 
-    public IAsyncEnumerable<T> ProcedureStream<T>(string sQuery, object? parameter, DataBaseConnectionModel connection, CancellationToken cancellationToken = default)
+    public IAsyncEnumerable<T> ProcedureStream<T>(string query, object? parameter, DataBaseConnectionModel connection, CancellationToken cancellationToken = default)
     {
-        return ExecQueryStream<T>(sQuery, parameter, connection, CommandType.StoredProcedure, cancellationToken);
+        return ExecQueryStream<T>(query, parameter, connection, CommandType.StoredProcedure, cancellationToken);
     }
 
-    public async Task<IEnumerable<IDictionary<string, object?>>?> ProcedureMultipleTables(string sQuery, object parameter, DataBaseConnectionModel connection)
+    public async Task<IEnumerable<IDictionary<string, object?>>?> ProcedureMultipleTables(string query, object parameter, DataBaseConnectionModel connection)
     {
         List<Dictionary<string, object?>> objReturn = [];
 
@@ -79,7 +83,7 @@ public class DatabaseAccess
         {
             await OpenConnectionAsync(dbConnection);
 
-            using var result = await dbConnection.QueryMultipleAsync(sQuery, parameter, commandType: CommandType.StoredProcedure);
+            using var result = await dbConnection.QueryMultipleAsync(query, parameter, commandType: CommandType.StoredProcedure);
 
             do
             {
@@ -102,23 +106,110 @@ public class DatabaseAccess
     }
 
 
-    public async Task<T?> QueryFirstOrDefault<T>(string sQuery, object? parameter, DataBaseConnectionModel connection)
+    public async Task<T?> QueryFirstOrDefault<T>(string query, object? parameter, DataBaseConnectionModel connection)
     {
-        return await ExecQueryFirstOrDefault<T>(sQuery, parameter, connection);
+        return await ExecQueryFirstOrDefault<T>(query, parameter, connection);
     }
 
-    public async Task<IEnumerable<T>?> Query<T>(string sQuery, object? parameter, DataBaseConnectionModel connection)
+    public async Task<IEnumerable<T>?> Query<T>(string query, object? parameter, DataBaseConnectionModel connection)
     {
-        return await ExecQuery<T>(sQuery, parameter, connection);
+        return await ExecQuery<T>(query, parameter, connection);
     }
 
-    public IAsyncEnumerable<T> QueryStream<T>(string sQuery, object? parameter, DataBaseConnectionModel connection, CancellationToken cancellationToken = default)
+    public IAsyncEnumerable<T> QueryStream<T>(string query, object? parameter, DataBaseConnectionModel connection, CancellationToken cancellationToken = default)
     {
-        return ExecQueryStream<T>(sQuery, parameter, connection, cancellationToken: cancellationToken);
+        return ExecQueryStream<T>(query, parameter, connection, cancellationToken: cancellationToken);
     }
+
+    #region Cached Methods
+    public async Task<IReadOnlyList<T>> QueryPagedCachedAsync<T>(
+        string query,
+        object? parameter,
+        DataBaseConnectionModel connection,
+        int page = 1,
+        int pageSize = 100,
+        TimeSpan? cacheExpiration = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+
+        var queryKey = BuildQueryCacheKey(query, parameter, connection);
+        var pageKey = BuildPageCacheKey(queryKey, page, pageSize);
+
+        var cachedPage = await _utils.GetFromCache<List<T>>(pageKey);
+        if (cachedPage is { Count: > 0 })
+        {
+            return cachedPage;
+        }
+
+        var requestedPageSource = new TaskCompletionSource<IReadOnlyList<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var currentPage = 1;
+                var currentPageItems = new List<T>(pageSize);
+
+                await foreach (var item in QueryStream<T>(query, parameter, connection))
+                {
+                    currentPageItems.Add(item);
+
+                    if (currentPageItems.Count < pageSize)
+                    {
+                        continue;
+                    }
+
+                    var pageItems = currentPageItems.ToList();
+                    await _utils.SetToCache(BuildPageCacheKey(queryKey, currentPage, pageSize), pageItems, cacheExpiration);
+
+                    if (currentPage == page)
+                    {
+                        requestedPageSource.TrySetResult(pageItems);
+                    }
+
+                    currentPage++;
+                    currentPageItems.Clear();
+                }
+
+                if (currentPageItems.Count > 0)
+                {
+                    var finalPageItems = currentPageItems.ToList();
+                    await _utils.SetToCache(BuildPageCacheKey(queryKey, currentPage, pageSize), finalPageItems, cacheExpiration);
+
+                    if (currentPage == page)
+                    {
+                        requestedPageSource.TrySetResult(finalPageItems);
+                    }
+                }
+
+                requestedPageSource.TrySetResult([]);
+            }
+            catch (Exception ex)
+            {
+                requestedPageSource.TrySetException(ex);
+            }
+        });
+
+        return await requestedPageSource.Task.WaitAsync(cancellationToken);
+    }
+
+    private static string BuildPageCacheKey(string queryCacheKey, int page, int pageSize)
+    {
+        return $"{queryCacheKey}:page:{page}:size:{pageSize}";
+    }
+
+    private static string BuildQueryCacheKey(string query, object? parameter, DataBaseConnectionModel connection)
+    {
+        var parameterJson = parameter?.ToJson() ?? "null";
+        var rawKey = $"{connection.Type}|{connection.ConnectionString}|{query}|{parameterJson}";
+        return rawKey.ToSHA256();
+    }
+    #endregion Cached Methods
 
     #region BaseMethods
-    private async Task<IEnumerable<T>?> ExecQuery<T>(string sQuery, object? parameter, DataBaseConnectionModel connection, CommandType? type = null)
+    private async Task<IEnumerable<T>?> ExecQuery<T>(string query, object? parameter, DataBaseConnectionModel connection, CommandType? type = null)
     {
         using var dbConnection = GetDatabaseConnection(connection);
 
@@ -126,7 +217,7 @@ public class DatabaseAccess
         {
             await OpenConnectionAsync(dbConnection);
 
-            return await dbConnection.QueryAsync<T>(sQuery, parameter, commandType: type);
+            return await dbConnection.QueryAsync<T>(query, parameter, commandType: type);
         }
         catch (Exception ex)
         {
@@ -137,7 +228,7 @@ public class DatabaseAccess
     }
 
     private async IAsyncEnumerable<T> ExecQueryStream<T>(
-        string sQuery,
+        string query,
         object? parameter,
         DataBaseConnectionModel connection,
         CommandType? type = null,
@@ -147,7 +238,7 @@ public class DatabaseAccess
 
         await OpenConnectionAsync(dbConnection, cancellationToken);
 
-        var command = new CommandDefinition(sQuery, parameter, commandType: type, cancellationToken: cancellationToken);
+        var command = new CommandDefinition(query, parameter, commandType: type, cancellationToken: cancellationToken);
         using var reader = await dbConnection.ExecuteReaderAsync(command);
         var parser = reader.GetRowParser<T>();
 
@@ -167,7 +258,7 @@ public class DatabaseAccess
         }
     }
 
-    private async Task<T?> ExecQueryFirstOrDefault<T>(string sQuery, object? parameter, DataBaseConnectionModel connection, CommandType? type = null)
+    private async Task<T?> ExecQueryFirstOrDefault<T>(string query, object? parameter, DataBaseConnectionModel connection, CommandType? type = null)
     {
         using var dbConnection = GetDatabaseConnection(connection);
 
@@ -175,7 +266,7 @@ public class DatabaseAccess
         {
             await OpenConnectionAsync(dbConnection);
 
-            return await dbConnection.QueryFirstOrDefaultAsync<T>(sQuery, parameter, commandType: type);
+            return await dbConnection.QueryFirstOrDefaultAsync<T>(query, parameter, commandType: type);
         }
         catch (Exception ex)
         {
