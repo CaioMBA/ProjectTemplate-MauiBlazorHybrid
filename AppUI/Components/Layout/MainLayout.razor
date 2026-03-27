@@ -107,6 +107,7 @@
     {
         var customAuthStateProvider = (CustomAuthenticationStateProvider)_authStateProvider;
         await customAuthStateProvider.UpdateAuthenticationState(null);
+        _navigation.NavigateTo("/", true);
     }
 
     protected override void OnInitialized()
