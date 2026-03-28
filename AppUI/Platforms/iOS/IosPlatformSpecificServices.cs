@@ -4,7 +4,8 @@ using Foundation;
 using MobileCoreServices;
 using ObjCRuntime;
 using Plugin.LocalNotification;
-using Plugin.LocalNotification.iOSOption;
+using Plugin.LocalNotification.Core.Models;
+using Plugin.LocalNotification.Core.Models.AppleOption;
 using UIKit;
 
 [assembly: Dependency(typeof(AppUI.Platforms.iOS.IosPlatformSpecificServices))]
@@ -124,9 +125,9 @@ public class IosPlatformSpecificServices : IPlatformSpecificServices
             {
                 NotifyTime = DateTime.Now.AddSeconds(NotifyTime)
             },
-            iOS = new iOSOptions
+            Apple = new AppleOptions
             {
-                Priority = iOSPriority.Critical,
+                Priority = ApplePriority.Critical,
                 ApplyBadgeValue = true,
                 PresentAsBanner = true,
                 ShowInNotificationCenter = true

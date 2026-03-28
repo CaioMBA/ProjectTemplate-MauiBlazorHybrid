@@ -6,6 +6,8 @@ using CommunityToolkit.Maui.Storage;
 using Domain.Interfaces.ApplicationConfigurationInterfaces;
 using Plugin.LocalNotification;
 using Plugin.LocalNotification.AndroidOption;
+using Plugin.LocalNotification.Core.Models;
+using Plugin.LocalNotification.Core.Models.AndroidOption;
 using Environment = Android.OS.Environment;
 
 [assembly: Dependency(typeof(AppUI.Platforms.Android.AndroidPlatformSpecificServices))]

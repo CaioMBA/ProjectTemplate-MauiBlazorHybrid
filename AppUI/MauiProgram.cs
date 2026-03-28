@@ -21,7 +21,7 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
             .UseMauiCameraView()
-            .AddPlatformBuilderDependencies()
+            .UseLocalNotification()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -45,15 +45,6 @@ public static class MauiProgram
 #endif
 
         return builder.Build();
-    }
-
-    private static MauiAppBuilder AddPlatformBuilderDependencies(this MauiAppBuilder builderCollection)
-    {
-
-#if ANDROID || IOS
-        builderCollection.UseLocalNotification();
-#endif
-        return builderCollection;
     }
 
     private static IServiceCollection AddAppSettings(this IServiceCollection serviceCollection)
