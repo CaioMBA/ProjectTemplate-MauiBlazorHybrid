@@ -21,6 +21,7 @@ public class DatabaseAccess(AppUtils utils)
     private readonly AppUtils _utils = utils;
     private DataBaseConnectionModel? _scopedConnection;
 
+    #region Connection Management
     public void Configure(string dataBaseId)
     {
         _scopedConnection = _utils.GetDataBase(dataBaseId);
@@ -85,6 +86,8 @@ public class DatabaseAccess(AppUtils utils)
         return (dbConnection, true);
     }
 
+    #endregion Connection Management
+
     public async Task<T?> ProcedureFirstOrDefaultAsync<T>(string query, object? parameter, IDbTransaction? transaction = null)
     {
         return await ExecQueryFirstOrDefault<T>(query, parameter, CommandType.StoredProcedure, transaction);
@@ -135,7 +138,6 @@ public class DatabaseAccess(AppUtils utils)
 
         return objReturn;
     }
-
 
     public async Task<T?> QueryFirstOrDefault<T>(string query, object? parameter, IDbTransaction? transaction = null)
     {
@@ -221,7 +223,7 @@ public class DatabaseAccess(AppUtils utils)
             {
                 requestedPageSource.TrySetException(ex);
             }
-        });
+        }, cancellationToken);
 
         return await requestedPageSource.Task.WaitAsync(cancellationToken);
     }
@@ -239,7 +241,7 @@ public class DatabaseAccess(AppUtils utils)
     }
     #endregion Cached Methods
 
-    #region BaseMethods
+    #region Base Methods
     private async Task<IEnumerable<T>?> ExecQuery<T>(string query, object? parameter, CommandType? type = null, IDbTransaction? transaction = null)
     {
         var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
@@ -325,6 +327,148 @@ public class DatabaseAccess(AppUtils utils)
 
     }
 
+    #region Transaction Methods
+    public async Task<IDbTransaction> CreateTransactionAsync(
+        IsolationLevel isolationLevel = IsolationLevel.ReadCommitted,
+        CancellationToken cancellationToken = default)
+    {
+        var dbConnection = GetDatabaseConnection(ResolveConnectionModel());
+        await OpenConnectionAsync(dbConnection, cancellationToken);
+
+        if (dbConnection is DbConnection dbConnectionAsync)
+        {
+            return await dbConnectionAsync.BeginTransactionAsync(isolationLevel, cancellationToken);
+        }
+
+        return dbConnection.BeginTransaction(isolationLevel);
+    }
+
+    public async Task CompleteTransactionAsync(
+        IDbTransaction? transaction,
+        bool saveChanges,
+        CancellationToken cancellationToken = default)
+    {
+        if (transaction is null)
+        {
+            return;
+        }
+
+        var connection = transaction.Connection;
+
+        try
+        {
+            if (saveChanges)
+            {
+                await CommitTransactionAsync(transaction, cancellationToken);
+                return;
+            }
+
+            await RollbackTransactionAsync(transaction, cancellationToken);
+        }
+        finally
+        {
+            if (transaction is IAsyncDisposable asyncTransaction)
+            {
+                await asyncTransaction.DisposeAsync();
+            }
+            else
+            {
+                transaction.Dispose();
+            }
+
+            if (connection is IAsyncDisposable asyncConnection)
+            {
+                await asyncConnection.DisposeAsync();
+            }
+            else
+            {
+                connection?.Dispose();
+            }
+        }
+    }
+
+    private static async Task CommitTransactionAsync(IDbTransaction transaction, CancellationToken cancellationToken)
+    {
+        if (transaction is DbTransaction dbTransaction)
+        {
+            await dbTransaction.CommitAsync(cancellationToken);
+            return;
+        }
+
+        transaction.Commit();
+    }
+
+    private static async Task RollbackTransactionAsync(IDbTransaction transaction, CancellationToken cancellationToken)
+    {
+        if (transaction is DbTransaction dbTransaction)
+        {
+            await dbTransaction.RollbackAsync(cancellationToken);
+            return;
+        }
+
+        transaction.Rollback();
+    }
+
+    public async Task CreateSavepointAsync(
+        IDbTransaction transaction,
+        string savepointName,
+        CancellationToken cancellationToken = default)
+    {
+        var dbTransaction = ResolveSavepointTransaction(transaction);
+        ValidateSavepointName(savepointName);
+
+        await dbTransaction.SaveAsync(savepointName, cancellationToken);
+    }
+
+    public async Task RollbackToSavepointAsync(
+        IDbTransaction transaction,
+        string savepointName,
+        CancellationToken cancellationToken = default)
+    {
+        var dbTransaction = ResolveSavepointTransaction(transaction);
+        ValidateSavepointName(savepointName);
+
+        await dbTransaction.RollbackAsync(savepointName, cancellationToken);
+    }
+
+    public async Task ReleaseSavepointAsync(
+        IDbTransaction transaction,
+        string savepointName,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateSavepointName(savepointName);
+        var dbTransaction = ResolveSavepointTransaction(transaction);
+
+        await dbTransaction.ReleaseAsync(savepointName, cancellationToken);
+    }
+
+    private static DbTransaction ResolveSavepointTransaction(IDbTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+
+        if (transaction is not DbTransaction dbTransaction)
+        {
+            throw new NotSupportedException("Savepoints require a DbTransaction implementation.");
+        }
+
+        if (!dbTransaction.SupportsSavepoints)
+        {
+            throw new NotSupportedException("The current database provider does not support savepoints.");
+        }
+
+        return dbTransaction;
+    }
+
+    private static void ValidateSavepointName(string savepointName)
+    {
+        if (string.IsNullOrWhiteSpace(savepointName))
+        {
+            throw new ArgumentException("Savepoint name cannot be null or empty.", nameof(savepointName));
+        }
+    }
+    #endregion Transaction Methods
+
+    #region Basic Methods
     public async Task<T> Read<T>(object Id, IDbTransaction? transaction = null) where T : class
     {
         var (dbConnection, shouldDispose) = await ResolveExecutionConnectionAsync(transaction);
@@ -392,5 +536,6 @@ public class DatabaseAccess(AppUtils utils)
             }
         }
     }
-    #endregion BaseMethods
+    #endregion Basic Methods
+    #endregion Base Methods
 }
