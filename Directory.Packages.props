@@ -36,5 +36,8 @@
     <PackageVersion Include="Oracle.ManagedDataAccess.Core" Version="23.26.100" />
     <PackageVersion Include="Plugin.LocalNotification" Version="14.0.0" />
     <PackageVersion Include="Plugin.Fingerprint" Version="2.1.5" />
+    <PackageVersion Include="Platform.Maui.Linux.Gtk4" Version="0.6.0" />
+    <PackageVersion Include="Platform.Maui.Linux.Gtk4.Essentials" Version="0.6.0" />
+    <PackageVersion Include="Platform.Maui.Linux.Gtk4.BlazorWebView" Version="0.6.0" />
   </ItemGroup>
 </Project>

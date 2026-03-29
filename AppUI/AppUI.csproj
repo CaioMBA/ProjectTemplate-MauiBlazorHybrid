@@ -5,6 +5,7 @@
 		<TargetFrameworks>net10.0-android</TargetFrameworks>
 		<TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0</TargetFrameworks>
 
 		<!-- Note for MacCatalyst:
             The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
@@ -84,6 +85,12 @@
        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
 		<PackageReference Include="Plugin.Fingerprint" />
 		<PackageReference Include="Plugin.LocalNotification" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Platform.Maui.Linux.Gtk4" />
+		<PackageReference Include="Platform.Maui.Linux.Gtk4.Essentials" />
+		<PackageReference Include="Platform.Maui.Linux.Gtk4.BlazorWebView" />
 	</ItemGroup>
 
 	<ItemGroup>

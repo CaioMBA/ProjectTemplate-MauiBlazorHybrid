@@ -9,6 +9,12 @@ using Domain.Models.ApplicationConfigurationModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Plugin.LocalNotification;
+#if NET10_0 && !ANDROID && !IOS && !MACCATALYST && !WINDOWS
+using Platform.Maui.Linux.Gtk4.BlazorWebView;
+using Platform.Maui.Linux.Gtk4.Essentials.Hosting;
+using Platform.Maui.Linux.Gtk4.Hosting;
+#endif
+
 
 namespace AppUI;
 
@@ -17,17 +23,9 @@ public static class MauiProgram
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
-        builder
-            .UseMauiApp<App>()
-            .UseMauiCommunityToolkit()
-            .UseMauiCameraView()
-            .UseLocalNotification()
-            .ConfigureFonts(fonts =>
-            {
-                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-            });
 
-        builder.Services.AddMauiBlazorWebView();
+        builder.AddPlatformBuilderDependencies();
+
         builder.Services
             .AddAppSettings()
             .AddPlatformServiceDependencies()
@@ -60,17 +58,43 @@ public static class MauiProgram
         return serviceCollection.AddConfiguration(configuration);
     }
 
+    private static MauiAppBuilder AddPlatformBuilderDependencies(this MauiAppBuilder builder)
+    {
+        return builder
+#if NET10_0 && !ANDROID && !IOS && !MACCATALYST && !WINDOWS
+            .UseMauiAppLinuxGtk4<App>()
+            .AddLinuxGtk4Essentials()
+#else
+            .UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
+            .UseMauiCameraView()
+            .UseLocalNotification()
+#endif
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+            });
+    }
+
     private static IServiceCollection AddPlatformServiceDependencies(this IServiceCollection serviceCollection)
     {
-        serviceCollection.AddSingleton<IRefreshViewState, RefreshViewState>();
-#if ANDROID
-        serviceCollection.AddSingleton<IPlatformSpecificServices, Platforms.Android.AndroidPlatformSpecificServices>();
-#elif IOS
-            serviceCollection.AddSingleton<IPlatformSpecificServices, AppUI.Platforms.iOS.IosPlatformSpecificServices>();
-#elif WINDOWS
-            serviceCollection.AddSingleton<IPlatformSpecificServices, AppUI.Platforms.Windows.WindowsPlatformSpecificServices>();
+#if NET10_0 && !ANDROID && !IOS && !MACCATALYST && !WINDOWS
+        serviceCollection.AddLinuxGtk4BlazorWebView();
+#else
+        serviceCollection.AddMauiBlazorWebView();
 #endif
-        return serviceCollection;
+
+        return serviceCollection
+#if ANDROID
+            .AddSingleton<IPlatformSpecificServices, Platforms.Android.AndroidPlatformSpecificServices>()
+#elif IOS
+            .AddSingleton<IPlatformSpecificServices, AppUI.Platforms.iOS.IosPlatformSpecificServices>()
+#elif WINDOWS
+            .AddSingleton<IPlatformSpecificServices, AppUI.Platforms.Windows.WindowsPlatformSpecificServices>()
+#elif NET10_0 && !ANDROID && !IOS && !MACCATALYST && !WINDOWS
+            .AddSingleton<IPlatformSpecificServices, AppUI.Platforms.Linux.LinuxPlatformSpecificServices>()
+#endif
+            .AddSingleton<IRefreshViewState, RefreshViewState>();
     }
 
     private static async Task<IServiceCollection> AddAssets(this IServiceCollection serviceCollection)
