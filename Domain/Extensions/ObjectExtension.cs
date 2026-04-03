@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Text;
+using System.Web;
 
 namespace Domain.Extensions;
 
@@ -229,5 +230,24 @@ public static class ObjectExtension
             .Replace("\r", "")
             .Replace("\n", "\\n")
             ?? string.Empty;
+    }
+
+    public static string ToQueryString(this IDictionary<string, object?>? parameters)
+    {
+        if (parameters == null || !parameters.Any())
+        {
+            return string.Empty;
+        }
+
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        foreach (var param in parameters)
+        {
+            if (param.Value != null)
+            {
+                query[param.Key] = param.Value.ToString();
+            }
+        }
+
+        return query?.ToString() ?? string.Empty;
     }
 }

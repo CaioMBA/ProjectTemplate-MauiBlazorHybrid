@@ -1,6 +1,7 @@
 ﻿@using System.Net.Http
 @using System.Net.Http.Json
 @using Domain
+@using Domain.Extensions
 @using Domain.Interfaces.ApplicationConfigurationInterfaces
 @using Domain.Interfaces.StateInterfaces
 @using Domain.Models.ApplicationConfigurationModels
@@ -22,6 +23,7 @@
 @using Services.AuthenticationServices
 @using System.ComponentModel
 @inject IRefreshViewState _refreshViewState;
+@inject IPlatformSpecificServices _platform;
 @inject AppUtils _utils;
 @inject AuthenticationStateProvider _authStateProvider;
 @inject NavigationManager _navigation;

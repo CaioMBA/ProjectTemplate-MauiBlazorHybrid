@@ -97,6 +97,11 @@ public static class StringExtension
         return JsonConvert.DeserializeObject<T>(str);
     }
 
+    public static string? ToUriEscaped(this String str)
+    {
+        return Uri.EscapeDataString(str);
+    }
+
     public static AppTheme ToAppTheme(this string str)
     {
         if (string.IsNullOrEmpty(str))

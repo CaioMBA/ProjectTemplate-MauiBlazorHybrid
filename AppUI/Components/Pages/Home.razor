@@ -12,8 +12,6 @@
 
 @(language.Welcome)
 
-<button class="btn btn-success" @onclick='() => _navigation.NavigateTo("/counter", false)'>Counter</button>
-
 @code {
     HomeViewLanguageModel language => _settingsService.CurrentLanguage.Home;
 }

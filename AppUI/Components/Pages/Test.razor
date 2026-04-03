@@ -1,0 +1,217 @@
+@page "/test"
+@attribute [Authorize]
+
+<div class="test-page">
+    <div class="test-page__header">
+        <h1>Test Center</h1>
+        <p>Platform services, handler pages, and navigation actions.</p>
+    </div>
+
+    <div class="test-grid">
+        <section class="test-card">
+            <h2>Navigation</h2>
+            <div class="test-actions">
+                <button class="btn btn-primary" @onclick='() => NavigateTo("/")'>Home</button>
+                <button class="btn btn-primary" @onclick='() => NavigateTo("/counter")'>Counter</button>
+                <button class="btn btn-primary" @onclick='() => NavigateTo("/weather")'>Weather</button>
+                <button class="btn btn-warning" @onclick='() => NavigateTo("/loading")'>Loading</button>
+                <button class="btn btn-warning" @onclick='() => NavigateTo("/forbidden")'>Forbidden</button>
+                <button class="btn btn-warning" @onclick='() => NavigateTo("/not-found")'>Not Found</button>
+                <button class="btn btn-secondary" @onclick='() => NavigateTo("/login")'>Login</button>
+            </div>
+        </section>
+
+        <section class="test-card">
+            <h2>Platform Services</h2>
+
+            <div class="mb-3">
+                <label for="asset-path" class="form-label">Asset path</label>
+                <input id="asset-path" class="form-control" @bind="assetPath" placeholder="resources/raw/languages/en-us.json" />
+            </div>
+
+            <div class="test-actions">
+                <button class="btn btn-primary" @onclick="ListAssetsAsync">List Assets</button>
+                <button class="btn btn-primary" @onclick="ReadAssetContent">Read Asset Content</button>
+                <button class="btn btn-primary" @onclick="PickDirectoryAsync">Pick Directory</button>
+                <button class="btn btn-primary" @onclick="OpenDirectoryAsync" disabled="@string.IsNullOrWhiteSpace(selectedDirectory)">Open Directory</button>
+                <button class="btn btn-primary" @onclick="SendLocalNotificationAsync">Send Notification</button>
+                <button class="btn btn-primary" @onclick="ScanBarcodeAsync">Scan Barcode</button>
+            </div>
+        </section>
+
+        <section class="test-card">
+            <h2>System Information</h2>
+            <div class="test-actions">
+                <button class="btn btn-success" @onclick="RefreshSystemInformation">Refresh Info</button>
+            </div>
+
+            @if (systemInformation.Count > 0)
+            {
+                <dl class="test-info-grid">
+                    @foreach (var item in systemInformation)
+                    {
+                        <dt>@item.Key</dt>
+                        <dd>@item.Value</dd>
+                    }
+                </dl>
+            }
+        </section>
+
+        <section class="test-card">
+            <h2>Output</h2>
+            <div class="test-output">
+                @statusMessage
+            </div>
+
+            @if (assets.Count > 0)
+            {
+                <h3>Assets (@assets.Count)</h3>
+                <ul class="test-list">
+                    @foreach (var asset in assets.Take(25))
+                    {
+                        <li>@asset</li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    private string statusMessage = "Ready.";
+    private string assetPath = "";
+    private string selectedDirectory = "";
+    private List<string> assets = [];
+    private Dictionary<string, string> systemInformation = [];
+
+    private void NavigateTo(string route)
+    {
+        _navigation.NavigateTo(route, false);
+    }
+
+    private async Task ListAssetsAsync()
+    {
+        try
+        {
+            assets = (await _platform.ListAssetsAsync()).ToList();
+            statusMessage = $"Loaded {assets.Count} assets.";
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                assetPath = assets.FirstOrDefault() ?? string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    private void ReadAssetContent()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                statusMessage = "Provide an asset path first.";
+                return;
+            }
+
+            var content = _platform.ReadAssetContent(assetPath);
+            statusMessage = string.IsNullOrWhiteSpace(content)
+                ? "Asset is empty."
+                : $"Asset content preview: {content[..Math.Min(content.Length, 300)]}";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    private async Task PickDirectoryAsync()
+    {
+        try
+        {
+            selectedDirectory = await _platform.PickDirectory() ?? string.Empty;
+            statusMessage = string.IsNullOrWhiteSpace(selectedDirectory)
+                ? "No directory selected."
+                : $"Selected directory: {selectedDirectory}";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    private async Task OpenDirectoryAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedDirectory))
+            {
+                statusMessage = "Pick a directory first.";
+                return;
+            }
+
+            await _platform.OpenDirectory(selectedDirectory);
+            statusMessage = $"Opened directory: {selectedDirectory}";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    private async Task SendLocalNotificationAsync()
+    {
+        try
+        {
+            await _platform.SendLocalNotification("Test notification", "This notification was triggered from Test Center.");
+            statusMessage = "Notification sent.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    private async Task ScanBarcodeAsync()
+    {
+        try
+        {
+            var result = await _platform.ScanBarcodeAsync();
+            statusMessage = string.IsNullOrWhiteSpace(result) ? "No barcode scanned." : $"Barcode result: {result}";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    private Task RefreshSystemInformation()
+    {
+        try
+        {
+            systemInformation = new Dictionary<string, string>
+            {
+                ["Storage Total"] = _platform.GetStorage(false).ToFormattedBytes(),
+                ["Storage Available"] = _platform.GetStorage(true).ToFormattedBytes(),
+                ["Processor"] = _platform.GetProcessor(),
+                ["RAM"] = _platform.GetRam().ToFormattedBytes(),
+                ["Graphics Card"] = _platform.GetGraphicsCard(),
+                ["OS Name"] = _platform.GetOsName(),
+                ["OS Version"] = _platform.GetOsVersion(),
+                ["OS Architecture"] = _platform.GetOsArchitecture(),
+                ["Machine Name"] = _platform.GetMachineName(),
+                ["User Name"] = _platform.GetUserName()
+            };
+
+            statusMessage = "System information refreshed.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+
+        return Task.CompletedTask;
+    }
+}
