@@ -9,12 +9,12 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-image: linear-gradient(180deg, var(--nav-gradient-start) 0%, var(--nav-gradient-end) 70%);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: var(--surface-alt-color);
+    border-bottom: 1px solid var(--border-color);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
@@ -22,28 +22,46 @@ main {
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
+        color: var(--link-color);
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;
     }
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+    .top-row ::deep .btn {
+        color: var(--accent-contrast-color);
+        background-color: var(--accent-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+        padding: 0.4rem 0.9rem;
+        line-height: 1.2;
     }
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+        .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
+            color: var(--link-hover-color);
+            text-decoration: underline;
+        }
+
+        .top-row ::deep .btn:hover,
+        .top-row ::deep .btn:focus {
+            color: var(--accent-contrast-color);
+            background-color: var(--accent-color-hover);
+            border-color: var(--accent-color-hover);
+        }
+
+        .top-row ::deep a:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
 @media (max-width: 640.98px) {
     .top-row {
         justify-content: space-between;
     }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+        .top-row ::deep a, .top-row ::deep .btn-link {
+            margin-left: 0;
+        }
 }
 
 @media (min-width: 641px) {
@@ -64,11 +82,11 @@ main {
         z-index: 1;
     }
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
+        .top-row.auth ::deep a:first-child {
+            flex: 1;
+            text-align: right;
+            width: 0;
+        }
 
     .top-row, article {
         padding-left: 2rem !important;

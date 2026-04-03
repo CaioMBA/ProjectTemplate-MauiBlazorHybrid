@@ -7,32 +7,32 @@
     max-width: 100%;
     max-height: 100%;
     padding: 20px;
-    background: #fff;
+    background: var(--surface-color);
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 24px var(--shadow-color);
 }
 
     .forbidden-container h1 {
         font-size: 80px;
-        color: #ffc61a;
+        color: var(--warning-color);
     }
 
     .forbidden-container p {
         font-size: 18px;
-        color: #333;
+        color: var(--font-color);
         margin: 10px 0 20px;
     }
 
     .forbidden-container a {
         display: inline-block;
         padding: 10px 20px;
-        color: #fff;
-        background: #ffc61a;
+        color: var(--accent-contrast-color);
+        background: var(--warning-color);
         text-decoration: none;
         border-radius: 5px;
         transition: 0.3s;
     }
 
         .forbidden-container a:hover {
-            background: #ffb400;
+            background: var(--warning-hover-color);
         }

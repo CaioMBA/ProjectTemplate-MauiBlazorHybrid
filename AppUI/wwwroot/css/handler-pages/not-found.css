@@ -7,32 +7,32 @@
     max-width: 100%;
     max-height: 100%;
     padding: 20px;
-    background: #fff;
+    background: var(--surface-color);
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 24px var(--shadow-color);
 }
 
     .not-found-container h1 {
         font-size: 80px;
-        color: #ff4757;
+        color: var(--danger-color);
     }
 
     .not-found-container p {
         font-size: 18px;
-        color: #333;
+        color: var(--font-color);
         margin: 10px 0 20px;
     }
 
     .not-found-container a {
         display: inline-block;
         padding: 10px 20px;
-        color: #fff;
-        background: #ff4757;
+        color: var(--accent-contrast-color);
+        background: var(--danger-color);
         text-decoration: none;
         border-radius: 5px;
         transition: 0.3s;
     }
 
         .not-found-container a:hover {
-            background: #e84148;
+            background: var(--danger-hover-color);
         }

@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase;
 @implements IDisposable;
 
+<link rel="stylesheet" href="css/themes/@(_settingsService.CurrentTheme.Name).css" />
+
 @Body
 
 @code {

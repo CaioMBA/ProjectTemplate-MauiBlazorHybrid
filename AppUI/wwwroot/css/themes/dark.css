@@ -1,3 +1,56 @@
 ﻿:root {
-    --background-color: black;
+    --background-color: #0f1117;
+    --surface-color: #171a23;
+    --surface-alt-color: #1d2230;
+    --font-color: #e5e7eb;
+    --muted-font-color: #a7b0c2;
+    --border-color: #2e3648;
+    --shadow-color: rgba(0, 0, 0, 0.45);
+
+    --accent-color: #60a5fa;
+    --accent-color-hover: #3b82f6;
+    --accent-contrast-color: #ffffff;
+
+    --link-color: #93c5fd;
+    --link-hover-color: #bfdbfe;
+    --focus-ring-color: #3b82f6;
+
+    --success-color: #22c55e;
+    --error-color: #f87171;
+    --warning-color: #fbbf24;
+    --warning-hover-color: #f59e0b;
+    --danger-color: #f87171;
+    --danger-hover-color: #ef4444;
+
+    --toggle-bg: #3c465e;
+    --toggle-active-bg: #16a34a;
+    --toggle-knob-color: #f8fafc;
+
+    --dropdown-bg: #1b2130;
+    --dropdown-hover-bg: #2a3348;
+    --dropdown-border-color: #364058;
+
+    --input-bg: #141a27;
+    --input-border-color: #364058;
+    --input-focus-border-color: #60a5fa;
+
+    --nav-gradient-start: #111827;
+    --nav-gradient-end: #1f2937;
+    --nav-top-overlay: rgba(15, 23, 42, 0.4);
+    --nav-link-color: #d6dded;
+    --nav-link-hover-bg: rgba(147, 197, 253, 0.16);
+    --nav-link-active-bg: rgba(147, 197, 253, 0.28);
+
+    --blazor-error-bg: #7c2d12;
+    --blazor-error-text: #ffedd5;
+    --safe-area-bg: #0f1117;
+
+    --table-bg: #171a23;
+    --table-header-bg: #20283a;
+    --table-row-hover-bg: #2a3348;
+
+    --loading-ring-1: #e879f9;
+    --loading-ring-2: #fb7185;
+    --loading-ring-3: #22d3ee;
+    --loading-ring-4: #fbbf24;
 }
