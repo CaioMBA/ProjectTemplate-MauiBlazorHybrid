@@ -30,7 +30,7 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 		</Content>
-        <Content Include="..\AppUI\obj\$(Configuration)\net10.0\scopedcss\bundle\AppUI.styles.css" Condition="Exists('..\AppUI\obj\$(Configuration)\net10.0\scopedcss\bundle\AppUI.styles.css')">
+       <Content Include="..\AppUI\obj\$(Configuration)\$(TargetFramework)\scopedcss\bundle\AppUI.styles.css" Condition="Exists('..\AppUI\obj\$(Configuration)\$(TargetFramework)\scopedcss\bundle\AppUI.styles.css')">
 			<Link>wwwroot\AppUI.styles.css</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
