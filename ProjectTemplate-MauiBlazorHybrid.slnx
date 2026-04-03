@@ -1,9 +1,5 @@
 <Solution>
-  <Folder Name="/Infrastructure/">
-    <Project Path="CrossCutting/CrossCutting.csproj" Id="9daec568-5a4d-44f7-9be1-8131fb82c016" />
-    <Project Path="Data/Data.csproj" Id="40fcc317-3738-47ac-b602-2b0cc399ab43" />
-  </Folder>
-  <Folder Name="/_Solution-Items/">
+  <Folder Name="/Solution Items/">
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
@@ -12,10 +8,17 @@
     <File Path="Nuget.config" />
     <File Path="README.md" />
   </Folder>
-  <Folder Name="/_Tests/" />
-  <Project Path="AppUI/AppUI.csproj">
-    <Deploy Solution="Debug|*" />
-  </Project>
-  <Project Path="Domain/Domain.csproj" Id="d93612a4-878b-49db-a745-dca724da4d5f" />
-  <Project Path="Services/Services.csproj" Id="c87b7c02-9720-49d2-9c34-f605f3e56164" />
+  <Folder Name="/Source/">
+    <Project Path="AppUI.Linux/AppUI.Linux.csproj" Id="f366cf3a-b300-43a3-9f4b-6a114af860ad" />
+    <Project Path="AppUI/AppUI.csproj">
+      <Deploy Solution="Debug|*" />
+    </Project>
+    <Project Path="Domain/Domain.csproj" Id="d93612a4-878b-49db-a745-dca724da4d5f" />
+    <Project Path="Services/Services.csproj" Id="c87b7c02-9720-49d2-9c34-f605f3e56164" />
+  </Folder>
+  <Folder Name="/Source/Infrastructure/">
+    <Project Path="CrossCutting/CrossCutting.csproj" Id="9daec568-5a4d-44f7-9be1-8131fb82c016" />
+    <Project Path="Data/Data.csproj" Id="40fcc317-3738-47ac-b602-2b0cc399ab43" />
+  </Folder>
+  <Folder Name="/Tests/" />
 </Solution>

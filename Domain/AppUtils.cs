@@ -167,7 +167,19 @@ public class AppUtils(
     }
     #endregion Cache
 
-    public string GetSystemFilePath() => FileSystem.AppDataDirectory;
+    public string GetSystemFilePath()
+    {
+        try
+        {
+            return FileSystem.AppDataDirectory;
+        }
+        catch
+        {
+            var fallbackPath = Path.Combine(AppContext.BaseDirectory, "AppData");
+            Directory.CreateDirectory(fallbackPath);
+            return fallbackPath;
+        }
+    }
 
     public AppTheme GetSystemTheme() => AppInfo.Current.RequestedTheme;
 

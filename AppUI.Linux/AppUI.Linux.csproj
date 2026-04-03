@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>AppUI.Linux</RootNamespace>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+     <PackageReference Include="Microsoft.AspNetCore.Components.WebView" GeneratePathProperty="true" PrivateAssets="all" />
+		<PackageReference Include="Platform.Maui.Linux.Gtk4" />
+		<PackageReference Include="Platform.Maui.Linux.Gtk4.Essentials" />
+		<PackageReference Include="Platform.Maui.Linux.Gtk4.BlazorWebView" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AppUI\AppUI.csproj" />
+		<ProjectReference Include="..\Domain\Domain.csproj" />
+		<ProjectReference Include="..\CrossCutting\CrossCutting.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="..\AppUI\Resources\Raw\**\*">
+			<Link>Resources\Raw\%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+		<Content Include="..\AppUI\wwwroot\**\*">
+			<Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+        <Content Include="..\AppUI\obj\$(Configuration)\net10.0\scopedcss\bundle\AppUI.styles.css" Condition="Exists('..\AppUI\obj\$(Configuration)\net10.0\scopedcss\bundle\AppUI.styles.css')">
+			<Link>wwwroot\AppUI.styles.css</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+     <Content Include="$(PkgMicrosoft_AspNetCore_Components_WebView)\staticwebassets\blazor.webview.js">
+			<Link>wwwroot\_framework\blazor.webview.js</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+     <Content Include="$(PkgMicrosoft_AspNetCore_Components_WebView)\staticwebassets\blazor.modules.json">
+			<Link>wwwroot\_framework\blazor.modules.json</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+</Project>
