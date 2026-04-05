@@ -8,6 +8,12 @@
     <File Path="Nuget.config" />
     <File Path="README.md" />
   </Folder>
+  <Folder Name="/Solution Items/docs/">
+    <File Path="docs/android.md" />
+    <File Path="docs/linux-ubuntu.md" />
+    <File Path="docs/macos-ios-maccatalyst.md" />
+    <File Path="docs/windows.md" />
+  </Folder>
   <Folder Name="/Source/">
     <Project Path="AppUI.Linux/AppUI.Linux.csproj" Id="f366cf3a-b300-43a3-9f4b-6a114af860ad" />
     <Project Path="AppUI/AppUI.csproj">

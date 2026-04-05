@@ -1,134 +1,165 @@
 # ProjectTemplate-MauiBlazorHybrid
 
-A production-ready **.NET MAUI Blazor Hybrid template** for building multi-platform apps from a single codebase.
+Production-ready `.NET MAUI Blazor Hybrid` template for multi-platform apps with shared architecture and optional Linux desktop host.
 
-This template is designed to help you quickly fork, customize, and ship applications for:
+## How to use this repository (important)
 
-- `Android`
-- `iOS`
-- `macOS` (via `MacCatalyst`)
-- `Windows`
+If your goal is to create your own app, **do not clone this repository directly as your project base**.
 
-## Purpose
+Use this decision guide:
 
-Use this repository as a starting point for multi-platform apps that need:
+| Goal | Recommended action |
+|---|---|
+| Start your own app from this base | **Use GitHub "Use this template"** |
+| Keep a copy under your account and optionally sync upstream | **Fork** |
+| Help improve this base for everyone | **Clone and open a PR to this repository** |
 
-- Shared domain and service layers
-- Blazor UI inside a native MAUI host
-- Dependency injection and configuration setup
-- Cross-platform platform-specific services
-- A scalable structure (`AppUI`, `Domain`, `Services`, `Data`, `CrossCutting`)
+### Why
+
+- Using a template/fork keeps ownership and history clean for your app.
+- Cloning this base directly is best only when you plan to contribute changes back.
+
+## Compatibility
+
+This repository currently supports:
+
+| Platform | Project | Target | Host OS needed | Status |
+|---|---|---|---|---|
+| Android | `AppUI` | `net10.0-android` | Windows/macOS/Linux | ✅ |
+| iOS | `AppUI` | `net10.0-ios` | macOS (or paired Mac) | ✅ |
+| macOS (MacCatalyst) | `AppUI` | `net10.0-maccatalyst` | macOS | ✅ |
+| Windows | `AppUI` | `net10.0-windows10.0.19041.0` | Windows 10/11 | ✅ |
+| Linux Desktop (GTK4) | `AppUI.Linux` | `net10.0` | Native Linux / WSL2 | ✅ |
+
+## What is included
+
+- Clean layered architecture: `AppUI`, `Domain`, `Services`, `Data`, `CrossCutting`
+- Shared Blazor Hybrid UI with native MAUI host
+- Native Linux desktop entry project (`AppUI.Linux`) based on GTK4 + BlazorWebView
+- Launch profiles for Linux scenarios:
+  - `WSL` profile with software-rendering compatibility variables
+  - `Linux` profile for native Linux execution defaults
+- Centralized framework setup via `Directory.Build.props` (`net10.0`, nullable, implicit usings)
+- XAML source generation enabled (`MauiXamlInflator=SourceGen`) for better build/runtime behavior
 
 ## Project structure
 
-- `AppUI` → .NET MAUI Blazor Hybrid host app (startup project)
-- `Domain` → models, enums, contracts, mappings, core utilities
-- `Services` → business/application services
-- `Data` → database|api access and persistence concerns
-- `CrossCutting` → shared DI/extensions/infrastructure wiring
+- `AppUI`: main MAUI Blazor Hybrid app
+- `AppUI.Linux`: Linux desktop host for the shared app
+- `Domain`: entities/models/contracts/core abstractions
+- `Services`: application and business services
+- `Data`: persistence/integration implementations
+- `CrossCutting`: dependency injection and shared wiring
 
-## Prerequisites
+## Quick start (no surprises)
 
-- `.NET SDK 10`
-- MAUI workloads installed
-- IDE:
-  - `Visual Studio 2026` (Windows) with MAUI/mobile workloads, or
-  - `Visual Studio for Mac`/`JetBrains Rider` with MAUI support
-- Platform-specific requirements:
-  - `Android` emulator/device + SDK
-  - `iOS/MacCatalyst` requires a Mac build host and Apple tooling
-  - `Windows` development requires Windows 10/11
-
-Install MAUI workloads (if needed):
+1. Create your repository from this project using **Template** (recommended) or **Fork**.
+2. Clone **your own** repository locally.
+3. Install `.NET SDK 10`.
+4. Install MAUI workload:
 
 ```bash
 dotnet workload install maui
 ```
 
-## Getting started
-
-1. Fork this repository (or click **Use this template**) and clone your copy.
-2. Restore dependencies:
+5. Restore packages from repository root:
 
 ```bash
 dotnet restore
 ```
 
-3. Open the solution in your IDE.
-4. Set `AppUI` as startup project.
-5. Choose target framework/device and run.
+6. Rename solution/projects/namespaces to your product naming.
+7. Update app metadata in `AppUI/AppUI.csproj`:
+   - `ApplicationTitle`
+   - `ApplicationId`
+   - version fields
+8. Configure app settings in `AppUI/Resources/Raw/appsettings.json`.
+9. Choose startup project based on platform:
+   - `AppUI` for Android/iOS/MacCatalyst/Windows
+   - `AppUI.Linux` for Linux desktop
 
----
+## Required environment by platform
 
-## All ways to run the app
+### Common (all platforms)
 
-## 1) Visual Studio (recommended)
+- `.NET SDK 10`
+- MAUI workload installed
 
-1. Open the solution.
-2. Set `AppUI` as startup project.
-3. In the run target selector, choose one target:
-   - `net10.0-android` (emulator/device)
-   - `net10.0-ios` (simulator/device, Mac required)
-   - `net10.0-maccatalyst` (Mac required)
-   - `net10.0-windows10.0.19041.0`
-4. Press `F5` (debug) or `Ctrl+F5` (run without debugging).
+### Windows
 
-## 2) .NET CLI - Windows target
+- Windows 10/11
+- Visual Studio 2026 with MAUI tooling
 
-Run on Windows:
+### Android
+
+- Windows, macOS, or Linux
+- MAUI workload installed
+- Android SDK + emulator/device
+- Visual Studio 2026 (Windows) or equivalent MAUI-capable IDE
+
+### iOS + MacCatalyst
+
+- macOS with Xcode and Apple command-line tools
+- MAUI workload installed on Mac
+- For development from Windows, use Pair-to-Mac
+
+### Linux desktop (`AppUI.Linux`)
+
+- Linux distro with GTK4 and WebKitGTK runtime available
+- For WSL2, use `WSL` profile from `AppUI.Linux/Properties/launchSettings.json`
+- For native Linux, use `Linux` profile
+
+## Run commands
+
+Run commands from the repository root.
+
+### MAUI project (`AppUI`)
+
+Windows:
 
 ```bash
 dotnet build AppUI/AppUI.csproj -t:Run -f net10.0-windows10.0.19041.0
 ```
 
-## 3) .NET CLI - Android target
-
-Run on Android emulator/device:
+Android:
 
 ```bash
 dotnet build AppUI/AppUI.csproj -t:Run -f net10.0-android
 ```
 
-If multiple devices are available, specify one:
-
-```bash
-dotnet build AppUI/AppUI.csproj -t:Run -f net10.0-android -p:AndroidDeviceId=<device-id>
-```
-
-## 4) .NET CLI - iOS target (Mac required)
+iOS (Mac required):
 
 ```bash
 dotnet build AppUI/AppUI.csproj -t:Run -f net10.0-ios
 ```
 
-## 5) .NET CLI - MacCatalyst target (Mac required)
+MacCatalyst (Mac required):
 
 ```bash
 dotnet build AppUI/AppUI.csproj -t:Run -f net10.0-maccatalyst
 ```
 
-## 6) Build-only (all configured target frameworks on current OS)
-
-Useful to validate setup without launching the app:
+### Linux project (`AppUI.Linux`)
 
 ```bash
-dotnet build AppUI/AppUI.csproj
+dotnet run --project AppUI.Linux/AppUI.Linux.csproj
 ```
 
-## Configuration
+### Build validation
 
-- Main app config file: `AppUI/Resources/Raw/appsettings.json`
-- Update API/database placeholders before running real integrations.
+```bash
+dotnet build
+```
 
-## Using this template for your own app
+## Contributing to this base template
 
-- Rename solution/projects/namespaces to your product naming.
-- Replace app metadata in `AppUI/AppUI.csproj` (`ApplicationTitle`, `ApplicationId`).
-- Add your pages/components/services while keeping shared layers isolated.
-- Keep platform-specific code in `AppUI/Platforms/*`.
+If you cloned this repository directly and want improvements here for everyone, open a PR against this repository.
 
-## Notes
+## Additional documentation
 
-- This template targets `.NET 10`.
-- On non-Windows OS, Windows target is naturally excluded.
-- On Linux, only Android target is configured in the project by default.
+Platform-specific setup guides:
+
+- `docs/windows.md`
+- `docs/android.md`
+- `docs/macos-ios-maccatalyst.md`
+- `docs/linux-ubuntu.md`
