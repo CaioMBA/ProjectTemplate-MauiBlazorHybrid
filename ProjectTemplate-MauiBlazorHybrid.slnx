@@ -26,5 +26,7 @@
     <Project Path="CrossCutting/CrossCutting.csproj" Id="9daec568-5a4d-44f7-9be1-8131fb82c016" />
     <Project Path="Data/Data.csproj" Id="40fcc317-3738-47ac-b602-2b0cc399ab43" />
   </Folder>
-  <Folder Name="/Tests/" />
+  <Folder Name="/Tests/">
+    <Project Path="UnitTest/UnitTest.csproj" Id="73b9d6e7-428f-4047-a812-a28f870468c5" />
+  </Folder>
 </Solution>

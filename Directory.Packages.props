@@ -1,44 +1,49 @@
 <Project>
-  <PropertyGroup>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageVersion Include="AdoNetCore.AseClient" Version="0.19.2" />
-    <PackageVersion Include="AutoMapper" Version="16.1.1" />
-    <PackageVersion Include="Camera.MAUI" Version="1.5.1" />
-    <PackageVersion Include="Camera.MAUI.ZXing" Version="1.0.0" />
-    <PackageVersion Include="CommunityToolkit.Maui" Version="14.0.1" />
-    <PackageVersion Include="Dapper" Version="2.1.72" />
-    <PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
-    <PackageVersion Include="FirebirdSql.Data.FirebirdClient" Version="10.3.4" />
-    <PackageVersion Include="Grpc.Core.Api" Version="2.76.0" />
-    <PackageVersion Include="Grpc.Net.Client" Version="2.76.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebView" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.51" />
-    <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.51" />
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.51" />
-    <PackageVersion Include="MySql.Data" Version="9.6.0" />
-    <PackageVersion Include="NCrontab" Version="3.4.0" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageVersion Include="Newtonsoft.Json.Bson" Version="1.0.3" />
-    <PackageVersion Include="Npgsql" Version="10.0.2" />
-    <PackageVersion Include="Oracle.ManagedDataAccess.Core" Version="23.26.100" />
-    <PackageVersion Include="Plugin.LocalNotification" Version="14.1.0" />
-    <PackageVersion Include="Plugin.Fingerprint" Version="2.1.5" />
-    <PackageVersion Include="Platform.Maui.Linux.Gtk4" Version="0.6.0" />
-    <PackageVersion Include="Platform.Maui.Linux.Gtk4.Essentials" Version="0.6.0" />
-    <PackageVersion Include="Platform.Maui.Linux.Gtk4.BlazorWebView" Version="0.6.0" />
-  </ItemGroup>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageVersion Include="AdoNetCore.AseClient" Version="0.19.2" />
+		<PackageVersion Include="AutoMapper" Version="16.1.1" />
+		<PackageVersion Include="Camera.MAUI" Version="1.5.1" />
+		<PackageVersion Include="Camera.MAUI.ZXing" Version="1.0.0" />
+		<PackageVersion Include="CommunityToolkit.Maui" Version="14.0.1" />
+		<PackageVersion Include="Dapper" Version="2.1.72" />
+		<PackageVersion Include="Dapper.Contrib" Version="2.0.78" />
+		<PackageVersion Include="FirebirdSql.Data.FirebirdClient" Version="10.3.4" />
+		<PackageVersion Include="Grpc.Core.Api" Version="2.76.0" />
+		<PackageVersion Include="Grpc.Net.Client" Version="2.76.0" />
+		<PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.AspNetCore.Components.WebView" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.51" />
+		<PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+		<PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.5" />
+		<PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.51" />
+		<PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.51" />
+		<PackageVersion Include="MySql.Data" Version="9.6.0" />
+		<PackageVersion Include="NCrontab" Version="3.4.0" />
+		<PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageVersion Include="Newtonsoft.Json.Bson" Version="1.0.3" />
+		<PackageVersion Include="Npgsql" Version="10.0.2" />
+		<PackageVersion Include="Oracle.ManagedDataAccess.Core" Version="23.26.100" />
+		<PackageVersion Include="Plugin.LocalNotification" Version="14.1.0" />
+		<PackageVersion Include="Plugin.Fingerprint" Version="2.1.5" />
+		<PackageVersion Include="Platform.Maui.Linux.Gtk4" Version="0.6.0" />
+		<PackageVersion Include="Platform.Maui.Linux.Gtk4.Essentials" Version="0.6.0" />
+		<PackageVersion Include="Platform.Maui.Linux.Gtk4.BlazorWebView" Version="0.6.0" />
+        <!--Tests-->
+		<PackageVersion Include="coverlet.collector" Version="8.0.1" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+		<PackageVersion Include="xunit" Version="2.9.3" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+	</ItemGroup>
 </Project>

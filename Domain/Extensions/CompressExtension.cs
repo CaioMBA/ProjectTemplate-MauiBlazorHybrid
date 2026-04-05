@@ -9,8 +9,11 @@ public static class CompressExtension
         ArgumentNullException.ThrowIfNull(data);
 
         using var outputStream = new MemoryStream();
-        using var gzipStream = new GZipStream(outputStream, level, leaveOpen: true);
-        gzipStream.Write(data);
+        using (var gzipStream = new GZipStream(outputStream, level, leaveOpen: true))
+        {
+            gzipStream.Write(data);
+        }
+
         return outputStream.ToArray();
     }
 
