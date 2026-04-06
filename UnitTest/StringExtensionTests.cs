@@ -1,4 +1,5 @@
 ﻿using Domain.Extensions;
+using System.Text;
 
 namespace UnitTest;
 
@@ -52,5 +53,39 @@ public class StringExtensionTests
         var result = value.ToAppTheme();
 
         Assert.Equal(expectedTheme, result.ToString());
+    }
+
+    [Fact]
+    public void ToLong_ShouldParseExpectedValues()
+    {
+        var parsed = "922337203685477580".ToLong(out var result);
+
+        Assert.True(parsed);
+        Assert.Equal(922337203685477580L, result);
+    }
+
+    [Fact]
+    public void LimitStringLength_ShouldTrimWhenLimitIsLowerThanLength()
+    {
+        var result = "abcdef".LimitStringLength(3);
+
+        Assert.Equal("abc", result);
+    }
+
+    [Fact]
+    public void HexToBytes_ShouldConvertExpectedBytes()
+    {
+        var bytes = "48656C6C6F".HexToBytes();
+
+        Assert.Equal("Hello", Encoding.UTF8.GetString(bytes));
+    }
+
+    [Fact]
+    public void ToObject_ShouldDeserializeExpectedObject()
+    {
+        var result = "{\"name\":\"test\"}".ToObject<Dictionary<string, string>>();
+
+        Assert.NotNull(result);
+        Assert.Equal("test", result!["name"]);
     }
 }

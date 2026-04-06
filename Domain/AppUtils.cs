@@ -1,6 +1,5 @@
 ﻿using Domain.Enums;
 using Domain.Extensions;
-using Domain.Interfaces.ApplicationConfigurationInterfaces;
 using Domain.Models.ApplicationConfigurationModels;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -11,12 +10,10 @@ namespace Domain;
 
 public class AppUtils(
     IOptionsMonitor<AppSettingsModel> options,
-    IPlatformSpecificServices platformService,
     IDistributedCache cache,
     ILogger<AppUtils> logger)
 {
     private readonly AppSettingsModel _appSettings = options.CurrentValue;
-    private readonly IPlatformSpecificServices _platformService = platformService;
     private readonly ILogger<AppUtils> _logger = logger;
 
     public AppSettingsModel GetSettings() => _appSettings;
@@ -171,34 +168,30 @@ public class AppUtils(
     {
         try
         {
+            _logger.LogInformation("Attempting to get system file path...");
             return FileSystem.AppDataDirectory;
         }
         catch
         {
+            _logger.LogWarning("Failed to get system file path, using fallback path.");
             var fallbackPath = Path.Combine(AppContext.BaseDirectory, "AppData");
             Directory.CreateDirectory(fallbackPath);
             return fallbackPath;
         }
     }
 
-    public AppTheme GetSystemTheme() => AppInfo.Current.RequestedTheme;
-
-    public async Task OpenUrl(string Url) => await Launcher.OpenAsync(new Uri(Url));
-
-    public async Task OpenDirectory(string folderPath) => await _platformService.OpenDirectory(folderPath);
-
-    public async Task<string?> PickDirectory() => await _platformService.PickDirectory();
-
-    public async Task<FileResult?> PickFileResult()
+    public AppTheme GetSystemTheme()
     {
-        var options = new PickOptions
+        try
         {
-            PickerTitle = "Please select a file",
-        };
-        return await FilePicker.PickAsync(options);
+            _logger.LogInformation("Attempting to get system theme...");
+            return AppInfo.Current.RequestedTheme;
+        }
+        catch
+        {
+            _logger.LogWarning("Failed to get system theme, returning Unspecified.");
+            return AppTheme.Unspecified;
+        }
     }
 
-    public async Task SendLocalNotification(string title, string message) => await _platformService.SendLocalNotification(title, message);
-
-    public async Task<string?> ScanBarcode() => await _platformService.ScanBarcodeAsync();
 }

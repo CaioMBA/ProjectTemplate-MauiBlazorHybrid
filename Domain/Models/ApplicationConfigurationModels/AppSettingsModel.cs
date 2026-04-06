@@ -5,6 +5,7 @@ namespace Domain.Models.ApplicationConfigurationModels;
 public record AppSettingsModel
 {
     public required string AppName { get; set; }
+    public required string AppVersion { get; set; }
     public List<DataBaseConnectionModel>? DataBaseConnectionModels { get; set; }
     public List<ApiConnectionModel>? ApiConnections { get; set; }
 }

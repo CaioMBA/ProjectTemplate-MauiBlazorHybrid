@@ -15,7 +15,8 @@ public sealed partial class LanguageDictionaryMapping : ILanguageDictionaryMappi
         var appSettings = options!.CurrentValue;
         _replacerMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["AppName"] = appSettings.AppName
+            ["AppName"] = appSettings.AppName,
+            ["AppVersion"] = appSettings.AppVersion,
         };
     }
 

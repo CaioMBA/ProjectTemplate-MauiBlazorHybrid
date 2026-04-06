@@ -61,6 +61,8 @@ public static class DependencyInjection
             .AddSingleton<IPlatformSpecificServices, Platforms.Android.AndroidPlatformSpecificServices>()
 #elif IOS
         .AddSingleton<IPlatformSpecificServices, AppUI.Platforms.iOS.IosPlatformSpecificServices>()
+#elif MACCATALYST
+        .AddSingleton<IPlatformSpecificServices, AppUI.Platforms.MacCatalyst.MacCatalystPlatformSpecificServices>()
 #elif WINDOWS
         .AddSingleton<IPlatformSpecificServices, AppUI.Platforms.Windows.WindowsPlatformSpecificServices>()
 #endif

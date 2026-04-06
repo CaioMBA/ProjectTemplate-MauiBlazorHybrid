@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using Domain.Interfaces.ApplicationConfigurationInterfaces;
+using Domain.Models.ApplicationConfigurationModels;
 using Microsoft.Win32;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -12,8 +13,35 @@ using WinRT.Interop;
 [assembly: Dependency(typeof(AppUI.Platforms.Windows.WindowsPlatformSpecificServices))]
 namespace AppUI.Platforms.Windows;
 
-internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
+internal class WindowsPlatformSpecificServices(IServiceProvider services) : IPlatformSpecificServices
 {
+    private readonly ICommandService _commandService = services.GetRequiredService<ICommandService>();
+    public async Task<CommandExecutionModel> RunCommand(CommandExecutionModel commandExecutionModel)
+    {
+        return await _commandService.RunAsync(commandExecutionModel, (command, model) =>
+        {
+            var useShellExecute = model.RunAsAdministrator;
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = command,
+                UseShellExecute = useShellExecute,
+                RedirectStandardOutput = !useShellExecute,
+                RedirectStandardError = !useShellExecute,
+                CreateNoWindow = true
+            };
+
+            if (model.RunAsAdministrator)
+            {
+                startInfo.Verb = "runas";
+            }
+
+            _commandService.AddArguments(startInfo, model.Parameters);
+            return startInfo;
+        });
+    }
+
+    public async Task OpenUrl(string Url) => await Launcher.OpenAsync(new Uri(Url));
+
     #region Assets
     public string ReadAssetContent(string path)
     {
@@ -104,6 +132,43 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
         return folder?.Path;
     }
 
+    public async Task<string?> PickFile()
+    {
+        var filePicker = new FileOpenPicker
+        {
+            SuggestedStartLocation = PickerLocationId.Desktop,
+            ViewMode = PickerViewMode.List,
+        };
+        filePicker.FileTypeFilter.Add("*");
+        var hwnd = GetWindowHandle();
+        if (hwnd == IntPtr.Zero)
+        {
+            throw new InvalidOperationException("Failed to get a valid window handle.");
+        }
+        InitializeWithWindow.Initialize(filePicker, hwnd);
+        var file = await filePicker.PickSingleFileAsync();
+        return file?.Path;
+    }
+
+    public async Task<IEnumerable<string>> PickFiles()
+    {
+        var filePicker = new FileOpenPicker
+        {
+            SuggestedStartLocation = PickerLocationId.Desktop,
+            ViewMode = PickerViewMode.List,
+        };
+        filePicker.FileTypeFilter.Add("*");
+        var hwnd = GetWindowHandle();
+        if (hwnd == IntPtr.Zero)
+        {
+            throw new InvalidOperationException("Failed to get a valid window handle.");
+        }
+        InitializeWithWindow.Initialize(filePicker, hwnd);
+        var files = await filePicker.PickMultipleFilesAsync();
+        return files.Select(f => f.Path);
+    }
+
+
     private static IntPtr GetWindowHandle()
     {
         var mauiWindow = Application.Current?.Windows.FirstOrDefault();
@@ -121,15 +186,15 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Process.Start("explorer.exe", folderPath);
+                await RunCommand(new CommandExecutionModel { Commands = ["explorer.exe"], Parameters = [folderPath] });
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                Process.Start("open", folderPath);
+                await RunCommand(new CommandExecutionModel { Commands = ["open"], Parameters = [folderPath] });
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Process.Start("xdg-open", folderPath);
+                await RunCommand(new CommandExecutionModel { Commands = ["xdg-open"], Parameters = [folderPath] });
             }
         }
         catch (Exception ex)
@@ -196,42 +261,49 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
         return GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
     }
 
-    public string GetGraphicsCard()
+    public IEnumerable<string> GetGraphicsCard()
     {
+        var names = new List<string>();
+
         try
         {
+            var powershellResult = RunCommand(new CommandExecutionModel
+            {
+                Commands = ["powershell"],
+                Parameters = ["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name"],
+            }).GetAwaiter().GetResult();
+
+            if (powershellResult.ExitCode == 0)
+            {
+                names.AddRange(powershellResult.StdOutLines
+                    .Select(x => x?.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase));
+            }
+
             string tempDxDiagPath = Path.Combine(Path.GetTempPath(), "dxdiag_output.txt");
 
-            var process = new Process
+            var dxdiagResult = RunCommand(new CommandExecutionModel
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "dxdiag",
-                    Arguments = $"/t \"{tempDxDiagPath}\"",
-                    RedirectStandardOutput = false,
-                    Verb = "runas", // Run as administrator
-                    UseShellExecute = true,
-                    CreateNoWindow = true,
+                Commands = ["dxdiag"],
+                Parameters = ["/t", tempDxDiagPath],
+                RunAsAdministrator = false,
+            }).GetAwaiter().GetResult();
 
-                }
-            };
-
-            process.Start();
-            process.WaitForExit(5000);
-
-            if (File.Exists(tempDxDiagPath))
+            if (dxdiagResult.ExitCode == 0 && File.Exists(tempDxDiagPath))
             {
                 var lines = File.ReadAllLines(tempDxDiagPath);
 
-                // Look for the first "Card name" line
-                string? cardname = lines.FirstOrDefault(line => line.TrimStart().StartsWith("Card name:", StringComparison.OrdinalIgnoreCase))?.Split(':')[1].Trim();
+                names.AddRange(lines
+                    .Where(line => line.TrimStart().StartsWith("Card name:", StringComparison.OrdinalIgnoreCase))
+                    .Select(line => line.Split(':', 2))
+                    .Where(parts => parts.Length == 2)
+                    .Select(parts => parts[1].Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase));
 
                 File.Delete(tempDxDiagPath);
-
-                if (!string.IsNullOrWhiteSpace(cardname))
-                {
-                    return cardname;
-                }
             }
         }
         catch (Exception ex)
@@ -239,7 +311,13 @@ internal class WindowsPlatformSpecificServices : IPlatformSpecificServices
             Console.WriteLine($"Error retrieving GPU info via dxdiag: {ex.Message}");
         }
 
-        return "Unknown Graphics Card";
+        var result = names
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return result.Length > 0 ? result : ["Unknown Graphics Card"];
     }
 
     public string GetOsName()

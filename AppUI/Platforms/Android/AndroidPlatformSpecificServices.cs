@@ -4,8 +4,8 @@ using Android.Content.Res;
 using Android.OS;
 using CommunityToolkit.Maui.Storage;
 using Domain.Interfaces.ApplicationConfigurationInterfaces;
+using Domain.Models.ApplicationConfigurationModels;
 using Plugin.LocalNotification;
-using Plugin.LocalNotification.AndroidOption;
 using Plugin.LocalNotification.Core.Models;
 using Plugin.LocalNotification.Core.Models.AndroidOption;
 using Environment = Android.OS.Environment;
@@ -13,8 +13,17 @@ using Environment = Android.OS.Environment;
 [assembly: Dependency(typeof(AppUI.Platforms.Android.AndroidPlatformSpecificServices))]
 namespace AppUI.Platforms.Android;
 
-public class AndroidPlatformSpecificServices : IPlatformSpecificServices
+internal class AndroidPlatformSpecificServices(IServiceProvider services) : IPlatformSpecificServices
 {
+    private readonly ICommandService _commandService = services.GetRequiredService<ICommandService>();
+
+    public Task<CommandExecutionModel> RunCommand(CommandExecutionModel commandExecutionModel)
+    {
+        return Task.FromResult(_commandService.BuildUnsupportedCommandExecutionModel(commandExecutionModel, "Terminal command execution is not supported on Android in this service."));
+    }
+
+    public async Task OpenUrl(string Url) => await Launcher.OpenAsync(new Uri(Url));
+
     #region Assets
     public string ReadAssetContent(string path)
     {
@@ -74,6 +83,46 @@ public class AndroidPlatformSpecificServices : IPlatformSpecificServices
     #endregion
 
     #region Picker
+    public async Task<string?> PickFile()
+    {
+        try
+        {
+            var options = new PickOptions
+            {
+                PickerTitle = "Please select a file",
+            };
+            FileResult? result = await FilePicker.PickAsync(options);
+            return result?.FullPath;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error on AppUI.Platforms.Android > PickFile. Error: {ex.Message}");
+            return null;
+        }
+    }
+
+    public async Task<IEnumerable<string>> PickFiles()
+    {
+        List<string?> filePaths = [];
+        try
+        {
+            var options = new PickOptions
+            {
+                PickerTitle = "Please select files",
+            };
+            var results = await FilePicker.PickMultipleAsync(options);
+            if (results != null)
+            {
+                filePaths.AddRange(results.Select(r => r?.FullPath));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error on AppUI.Platforms.iOS > PickFiles. Error: {ex.Message}");
+        }
+        return filePaths.Where(x => !string.IsNullOrEmpty(x))!;
+    }
+
     public async Task<string?> PickDirectory()
     {
         try
@@ -199,7 +248,67 @@ public class AndroidPlatformSpecificServices : IPlatformSpecificServices
         }
     }
 
-    public string GetGraphicsCard() => "Android GPU";
+    private static string? TryGetProp(string key)
+    {
+        try
+        {
+            using var process = new Java.Lang.ProcessBuilder("/system/bin/getprop", key)
+                .RedirectErrorStream(true)
+                .Start();
+
+            using var reader = new Java.IO.BufferedReader(new Java.IO.InputStreamReader(process.InputStream));
+            var value = reader.ReadLine()?.Trim();
+            process.WaitFor();
+
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public IEnumerable<string> GetGraphicsCard()
+    {
+        var names = new List<string>();
+
+        try
+        {
+            string[] properties = ["ro.hardware.egl", "ro.hardware.vulkan", "ro.board.platform"];
+
+            foreach (var property in properties)
+            {
+                var value = TryGetProp(property);
+                if (!string.IsNullOrWhiteSpace(value)
+                    && !value.Equals("unknown", StringComparison.OrdinalIgnoreCase)
+                    && !value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                {
+                    names.Add(value);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(Build.Hardware))
+            {
+                names.Add(Build.Hardware);
+            }
+
+            if (!string.IsNullOrWhiteSpace(Build.Board))
+            {
+                names.Add(Build.Board);
+            }
+        }
+        catch
+        {
+        }
+
+        var result = names
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return result.Length > 0 ? result : ["Unknown Graphics Card"];
+    }
 
     public string GetOsName() => "Android";
 

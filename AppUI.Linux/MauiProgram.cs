@@ -33,9 +33,9 @@ namespace AppUI.Linux
 
             builder.Services
             .AddAppSettings()
+            .AddUtilities()
             .AddSingleton<IPlatformSpecificServices, LinuxPlatformSpecificServices>()
             .AddSingleton<IRefreshViewState, RefreshViewState>()
-            .AddUtilities()
             .AddAssets().GetAwaiter().GetResult()
             .AddHttpClients()
             .AddDatabaseClients().GetAwaiter().GetResult()

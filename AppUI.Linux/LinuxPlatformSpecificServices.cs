@@ -1,76 +1,71 @@
 using AppUI.Linux;
 using Domain.Interfaces.ApplicationConfigurationInterfaces;
+using Domain.Models.ApplicationConfigurationModels;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 [assembly: Dependency(typeof(LinuxPlatformSpecificServices))]
 namespace AppUI.Linux;
 
-public class LinuxPlatformSpecificServices : IPlatformSpecificServices
+internal class LinuxPlatformSpecificServices(IServiceProvider services) : IPlatformSpecificServices
 {
-    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunCommandAsync(string fileName, params string[] arguments)
+    private readonly ICommandService _commandService = services.GetRequiredService<ICommandService>();
+
+    public async Task<CommandExecutionModel> RunCommand(CommandExecutionModel commandExecutionModel)
     {
-        var startInfo = new ProcessStartInfo
+        return await _commandService.RunAsync(commandExecutionModel, (command, model) =>
         {
-            FileName = fileName,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = model.RunAsAdministrator ? "sudo" : command,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
+            if (model.RunAsAdministrator)
+            {
+                startInfo.ArgumentList.Add(command);
+            }
 
-        using var process = new Process { StartInfo = startInfo };
-        process.Start();
-
-        var stdOutTask = process.StandardOutput.ReadToEndAsync();
-        var stdErrTask = process.StandardError.ReadToEndAsync();
-
-        await process.WaitForExitAsync();
-
-        return (process.ExitCode, await stdOutTask, await stdErrTask);
+            _commandService.AddArguments(startInfo, model.Parameters);
+            return startInfo;
+        });
     }
 
-    private static (int ExitCode, string StdOut, string StdErr) RunCommand(string fileName, params string[] arguments)
+    private (int ExitCode, string StdOut, string StdErr) RunCommandSync(string fileName, params string[] arguments)
     {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        using var process = new Process { StartInfo = startInfo };
-        process.Start();
-
-        var stdOut = process.StandardOutput.ReadToEnd();
-        var stdErr = process.StandardError.ReadToEnd();
-        process.WaitForExit();
-
-        return (process.ExitCode, stdOut, stdErr);
+        var model = RunCommand(new CommandExecutionModel { Commands = [fileName], Parameters = arguments }).GetAwaiter().GetResult();
+        return (model.ExitCode, model.StdOut, model.StdErr);
     }
 
-    private static bool IsCommandAvailable(string commandName)
+    private bool IsCommandAvailable(string commandName)
     {
         try
         {
-            var result = RunCommand("which", commandName);
+            var result = RunCommandSync("which", commandName);
             return result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.StdOut);
         }
         catch
         {
             return false;
+        }
+    }
+
+    public async Task OpenUrl(string Url)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Url))
+            {
+                return;
+            }
+            await RunCommand(new CommandExecutionModel { Commands = ["xdg-open"], Parameters = [Url] });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error on AppUI.Platforms.Linux > OpenUrl. Error: {ex.Message}");
         }
     }
 
@@ -130,13 +125,70 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
     #endregion
 
     #region Picker
+    public async Task<string?> PickFile()
+    {
+        try
+        {
+            if (IsCommandAvailable("zenity"))
+            {
+                var zenityResult = await RunCommand(new CommandExecutionModel { Commands = ["zenity"], Parameters = ["--file-selection", "--title=Select a file"] });
+                if (zenityResult.ExitCode == 0)
+                {
+                    return zenityResult.StdOut.Trim();
+                }
+            }
+            if (IsCommandAvailable("kdialog"))
+            {
+                var kdialogResult = await RunCommand(new CommandExecutionModel { Commands = ["kdialog"], Parameters = ["--getopenfilename", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)] });
+                if (kdialogResult.ExitCode == 0)
+                {
+                    return kdialogResult.StdOut.Trim();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error on AppUI.Platforms.Linux > PickFile. Error: {ex.Message}");
+        }
+        return null;
+    }
+
+    public async Task<IEnumerable<string>> PickFiles()
+    {
+        var files = new List<string>();
+        try
+        {
+            if (IsCommandAvailable("zenity"))
+            {
+                var zenityResult = await RunCommand(new CommandExecutionModel { Commands = ["zenity"], Parameters = ["--file-selection", "--multiple", "--title=Select files"] });
+                if (zenityResult.ExitCode == 0)
+                {
+                    files.AddRange(zenityResult.StdOut.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(f => f.Trim()));
+                }
+            }
+            else if (IsCommandAvailable("kdialog"))
+            {
+                var kdialogResult = await RunCommand(new CommandExecutionModel { Commands = ["kdialog"], Parameters = ["--getopenfilename", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "--multiple"] });
+                if (kdialogResult.ExitCode == 0)
+                {
+                    files.AddRange(kdialogResult.StdOut.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(f => f.Trim()));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error on AppUI.Platforms.Linux > PickFiles. Error: {ex.Message}");
+        }
+        return files;
+    }
+
     public async Task<string?> PickDirectory()
     {
         try
         {
             if (IsCommandAvailable("zenity"))
             {
-                var zenityResult = await RunCommandAsync("zenity", "--file-selection", "--directory", "--title=Select a folder");
+                var zenityResult = await RunCommand(new CommandExecutionModel { Commands = ["zenity"], Parameters = ["--file-selection", "--directory", "--title=Select a folder"] });
                 if (zenityResult.ExitCode == 0)
                 {
                     return zenityResult.StdOut.Trim();
@@ -145,7 +197,7 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
 
             if (IsCommandAvailable("kdialog"))
             {
-                var kdialogResult = await RunCommandAsync("kdialog", "--getexistingdirectory", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                var kdialogResult = await RunCommand(new CommandExecutionModel { Commands = ["kdialog"], Parameters = ["--getexistingdirectory", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)] });
                 if (kdialogResult.ExitCode == 0)
                 {
                     return kdialogResult.StdOut.Trim();
@@ -169,7 +221,7 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
                 return;
             }
 
-            await RunCommandAsync("xdg-open", folderPath);
+            await RunCommand(new CommandExecutionModel { Commands = ["xdg-open"], Parameters = [folderPath] });
         }
         catch (Exception ex)
         {
@@ -190,7 +242,7 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
 
             if (IsCommandAvailable("notify-send"))
             {
-                await RunCommandAsync("notify-send", string.IsNullOrWhiteSpace(title) ? "Notification" : title, message ?? string.Empty);
+                await RunCommand(new CommandExecutionModel { Commands = ["notify-send"], Parameters = [string.IsNullOrWhiteSpace(title) ? "Notification" : title, message ?? string.Empty] });
                 return;
             }
 
@@ -210,7 +262,7 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
         {
             if (IsCommandAvailable("zbarcam"))
             {
-                var result = await RunCommandAsync("zbarcam", "--raw", "--oneshot", "--nodisplay");
+                var result = await RunCommand(new CommandExecutionModel { Commands = ["zbarcam"], Parameters = ["--raw", "--oneshot", "--nodisplay"] });
                 if (result.ExitCode == 0)
                 {
                     var barcode = result.StdOut
@@ -262,7 +314,7 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
                 }
             }
 
-            var lscpu = RunCommand("lscpu");
+            var lscpu = RunCommandSync("lscpu");
             if (lscpu.ExitCode == 0)
             {
                 foreach (var line in lscpu.StdOut.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
@@ -309,24 +361,52 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
         return GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
     }
 
-    public string GetGraphicsCard()
+    public IEnumerable<string> GetGraphicsCard()
     {
+        var names = new List<string>();
+
         try
         {
             if (IsCommandAvailable("lspci"))
             {
-                var lspci = RunCommand("lspci");
+                var lspci = RunCommandSync("lspci");
                 if (lspci.ExitCode == 0)
                 {
-                    var gpuLine = lspci.StdOut
+                    var gpuLines = lspci.StdOut
                         .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                        .FirstOrDefault(l => l.Contains("VGA", StringComparison.OrdinalIgnoreCase)
-                                          || l.Contains("3D controller", StringComparison.OrdinalIgnoreCase)
-                                          || l.Contains("Display controller", StringComparison.OrdinalIgnoreCase));
+                        .Where(l => l.Contains("VGA", StringComparison.OrdinalIgnoreCase)
+                                 || l.Contains("3D controller", StringComparison.OrdinalIgnoreCase)
+                                 || l.Contains("Display controller", StringComparison.OrdinalIgnoreCase));
 
-                    if (!string.IsNullOrWhiteSpace(gpuLine))
+                    foreach (var gpuLine in gpuLines)
                     {
-                        return gpuLine.Trim();
+                        var cleaned = gpuLine.Split(':', 3).LastOrDefault()?.Trim();
+                        if (!string.IsNullOrWhiteSpace(cleaned))
+                        {
+                            var revIndex = cleaned.IndexOf(" (rev", StringComparison.OrdinalIgnoreCase);
+                            names.Add(revIndex > 0 ? cleaned[..revIndex].Trim() : cleaned);
+                        }
+                    }
+                }
+            }
+
+            if (IsCommandAvailable("glxinfo"))
+            {
+                var glxInfo = RunCommandSync("glxinfo", "-B");
+                if (glxInfo.ExitCode == 0)
+                {
+                    var deviceLine = glxInfo.StdOut
+                        .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .FirstOrDefault(l => l.TrimStart().StartsWith("Device:", StringComparison.OrdinalIgnoreCase)
+                                          || l.TrimStart().StartsWith("OpenGL renderer string:", StringComparison.OrdinalIgnoreCase));
+
+                    if (!string.IsNullOrWhiteSpace(deviceLine))
+                    {
+                        var cleaned = deviceLine.Split(':', 2).LastOrDefault()?.Trim();
+                        if (!string.IsNullOrWhiteSpace(cleaned))
+                        {
+                            names.Add(cleaned);
+                        }
                     }
                 }
             }
@@ -335,7 +415,13 @@ public class LinuxPlatformSpecificServices : IPlatformSpecificServices
         {
         }
 
-        return "Unknown Graphics Card";
+        var result = names
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return result.Length > 0 ? result : ["Unknown Graphics Card"];
     }
 
     public string GetOsName()

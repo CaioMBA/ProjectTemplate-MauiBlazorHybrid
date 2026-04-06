@@ -1,25 +1,44 @@
-﻿using CommunityToolkit.Maui.Storage;
+using CommunityToolkit.Maui.Storage;
 using Domain.Interfaces.ApplicationConfigurationInterfaces;
 using Domain.Models.ApplicationConfigurationModels;
 using Foundation;
 using Metal;
-using MobileCoreServices;
 using ObjCRuntime;
 using Plugin.LocalNotification;
 using Plugin.LocalNotification.Core.Models;
 using Plugin.LocalNotification.Core.Models.AppleOption;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using UIKit;
 
-[assembly: Dependency(typeof(AppUI.Platforms.iOS.IosPlatformSpecificServices))]
-namespace AppUI.Platforms.iOS;
+[assembly: Dependency(typeof(AppUI.Platforms.MacCatalyst.MacCatalystPlatformSpecificServices))]
+namespace AppUI.Platforms.MacCatalyst;
 
-internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatformSpecificServices
+internal class MacCatalystPlatformSpecificServices(IServiceProvider services) : IPlatformSpecificServices
 {
     private readonly ICommandService _commandService = services.GetRequiredService<ICommandService>();
 
     public Task<CommandExecutionModel> RunCommand(CommandExecutionModel commandExecutionModel)
     {
-        return Task.FromResult(_commandService.BuildUnsupportedCommandExecutionModel(commandExecutionModel, "Terminal command execution is not supported on iOS in this service."));
+        return _commandService.RunAsync(commandExecutionModel, (command, model) =>
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = model.RunAsAdministrator ? "sudo" : command,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            if (model.RunAsAdministrator)
+            {
+                startInfo.ArgumentList.Add(command);
+            }
+
+            _commandService.AddArguments(startInfo, model.Parameters);
+            return startInfo;
+        });
     }
 
     public async Task OpenUrl(string Url) => await Launcher.OpenAsync(new Uri(Url));
@@ -39,7 +58,7 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error on AppUI.Platforms.iOS > ReadAssetContent. Error: {ex.Message}");
+            Console.WriteLine($"Error on AppUI.Platforms.MacCatalyst > ReadAssetContent. Error: {ex.Message}");
         }
         return content;
     }
@@ -76,7 +95,7 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error on AppUI.Platforms.iOS > GetFilesRecursive. Error: {ex.Message}");
+            Console.WriteLine($"Error on AppUI.Platforms.MacCatalyst > GetFilesRecursive. Error: {ex.Message}");
         }
     }
     #endregion
@@ -100,7 +119,7 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error on AppUI.Platforms.iOS > PickDirectory. Error: {ex.Message}");
+            Console.WriteLine($"Error on AppUI.Platforms.MacCatalyst > PickDirectory. Error: {ex.Message}");
             return null;
         }
     }
@@ -122,7 +141,7 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error on AppUI.Platforms.iOS > PickFile. Error: {ex.Message}");
+            Console.WriteLine($"Error on AppUI.Platforms.MacCatalyst > PickFile. Error: {ex.Message}");
             return null;
         }
     }
@@ -144,7 +163,7 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error on AppUI.Platforms.iOS > PickFiles. Error: {ex.Message}");
+            Console.WriteLine($"Error on AppUI.Platforms.MacCatalyst > PickFiles. Error: {ex.Message}");
         }
         return filePaths.Where(x => !string.IsNullOrEmpty(x))!;
     }
@@ -153,17 +172,17 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
     {
         try
         {
-            Console.WriteLine($"IOS DOESN'T ALLOW TO OPEN SPECIFIC FOLDER IN FILES APP");
-            var picker = new UIDocumentPickerViewController(new string[] { UTType.Folder }, UIDocumentPickerMode.Open);
-            picker.WasCancelled += (sender, e) => { Console.WriteLine("User canceled folder selection"); };
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            {
+                return;
+            }
 
-            var window = UIApplication.SharedApplication.KeyWindow;
-            var viewController = window.RootViewController;
-            viewController.PresentViewController(picker, true, null);
+            var uri = new Uri($"file://{folderPath}");
+            await Launcher.OpenAsync(uri);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error on AppUI.Platforms.iOS > OpenDirectory. Error: {ex.Message}");
+            Console.WriteLine($"Error on AppUI.Platforms.MacCatalyst > OpenDirectory. Error: {ex.Message}");
         }
     }
     #endregion
@@ -210,7 +229,6 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
     #region SystemInfo
     public long GetStorage(bool available = false, string? name = null)
     {
-        // The 'name' parameter is ignored on iOS as it typically has a single main storage volume.
         try
         {
             NSFileSystemAttributes? attributes = NSFileManager.DefaultManager.GetFileSystemAttributes(
@@ -235,7 +253,7 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
 
     public string GetProcessor()
     {
-        return "Apple A-Series"; // No public API to get actual chip (A14, A15, etc.)
+        return "Apple Silicon / Intel";
     }
 
     public long GetRam()
@@ -256,24 +274,23 @@ internal class IosPlatformSpecificServices(IServiceProvider services) : IPlatfor
         }
     }
 
-    public string GetOsName() => "iOS";
+    public string GetOsName() => "MacCatalyst";
 
-    public string GetOsVersion() => UIDevice.CurrentDevice.SystemVersion;
+    public string GetOsVersion() => NSProcessInfo.ProcessInfo.OperatingSystemVersionString;
 
     public string GetOsArchitecture()
     {
-        var arch = Runtime.Arch;
-        return arch.ToString();
+        return RuntimeInformation.ProcessArchitecture.ToString();
     }
 
     public string GetMachineName()
     {
-        return UIDevice.CurrentDevice.Name;
+        return Environment.MachineName;
     }
 
     public string GetUserName()
     {
-        return UIDevice.CurrentDevice.IdentifierForVendor?.AsString() ?? "Unknown User";
+        return Environment.UserName;
     }
     #endregion
 }

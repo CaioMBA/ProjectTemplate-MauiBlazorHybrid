@@ -86,4 +86,33 @@ public class ObjectExtensionTests
         Assert.Contains("age=30", result);
         Assert.DoesNotContain("nullValue", result);
     }
+
+    [Fact]
+    public void ToCsv_Dictionary_ShouldBuildExpectedRows()
+    {
+        var data = new List<Dictionary<string, object>>
+        {
+            new()
+            {
+                ["Name"] = "Jane",
+                ["Age"] = 28
+            }
+        };
+
+        var csv = data.Cast<IDictionary<string, object>>().ToCSV(',');
+
+        Assert.Contains("Name,Age", csv);
+        Assert.Contains("Jane,28", csv);
+    }
+
+    [Fact]
+    public void ToLambdaFilter_NoValidFilters_ShouldThrowArgumentException()
+    {
+        var filters = new Dictionary<string, object?>
+        {
+            ["UnknownProperty"] = "value"
+        };
+
+        Assert.Throws<ArgumentException>(() => filters.ToLambdaFilter<Person>());
+    }
 }

@@ -25,8 +25,8 @@ public static class MauiProgram
 
         builder.Services
             .AddAppSettings()
-            .AddPlatformServiceDependencies()
             .AddUtilities()
+            .AddPlatformServiceDependencies()
             .AddAssets().GetAwaiter().GetResult()
             .AddHttpClients()
             .AddDatabaseClients().GetAwaiter().GetResult()

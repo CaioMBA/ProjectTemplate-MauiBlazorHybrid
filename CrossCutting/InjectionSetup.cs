@@ -54,6 +54,7 @@ public static class InjectionSetup
 
         serviceCollection.AddDistributedMemoryCache();
         serviceCollection.AddSingleton<AppUtils>();
+        serviceCollection.AddSingleton<ICommandService, CommandService>();
         serviceCollection.AddSingleton<ILanguageDictionaryMapping, LanguageDictionaryMapping>();
         serviceCollection.AddAutoMapper(options =>
         {

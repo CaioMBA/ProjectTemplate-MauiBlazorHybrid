@@ -3,8 +3,16 @@
 
 <div class="test-page">
     <div class="test-page__header">
-        <h1>Test Center</h1>
+        <div class="test-page__title-row">
+            <h1>Test Center</h1>
+            <span class="test-chip">Actions: 12</span>
+        </div>
         <p>Platform services, handler pages, and navigation actions.</p>
+        <div class="test-summary">
+            <span class="test-chip">Assets: @assets.Count</span>
+            <span class="test-chip">System fields: @systemInformation.Count</span>
+            <span class="test-chip">Directory: @(string.IsNullOrWhiteSpace(selectedDirectory) ? "None" : "Selected")</span>
+        </div>
     </div>
 
     <div class="test-grid">
@@ -31,11 +39,20 @@
 
             <div class="test-actions">
                 <button class="btn btn-primary" @onclick="ListAssetsAsync">List Assets</button>
+                <button class="btn btn-info" @onclick="PickRandomAsset">Pick Random Asset</button>
                 <button class="btn btn-primary" @onclick="ReadAssetContent">Read Asset Content</button>
                 <button class="btn btn-primary" @onclick="PickDirectoryAsync">Pick Directory</button>
                 <button class="btn btn-primary" @onclick="OpenDirectoryAsync" disabled="@string.IsNullOrWhiteSpace(selectedDirectory)">Open Directory</button>
                 <button class="btn btn-primary" @onclick="SendLocalNotificationAsync">Send Notification</button>
                 <button class="btn btn-primary" @onclick="ScanBarcodeAsync">Scan Barcode</button>
+            </div>
+        </section>
+
+        <section class="test-card">
+            <h2>Quick Tests</h2>
+            <div class="test-actions">
+                <button class="btn btn-success" @onclick="RunQuickHealthCheckAsync">Run Health Check</button>
+                <button class="btn btn-secondary" @onclick="ClearOutput">Clear Output</button>
             </div>
         </section>
 
@@ -59,15 +76,25 @@
 
         <section class="test-card">
             <h2>Output</h2>
+            <div class="mb-3">
+                <label for="asset-filter" class="form-label">Asset filter</label>
+                <input id="asset-filter" class="form-control" @bind="assetFilter" placeholder="Filter assets list" />
+            </div>
+
             <div class="test-output">
                 @statusMessage
             </div>
 
+            @if (lastUpdatedAt.HasValue)
+            {
+                <div class="test-meta">Last update: @lastUpdatedAt.Value.LocalDateTime.ToString("G")</div>
+            }
+
             @if (assets.Count > 0)
             {
-                <h3>Assets (@assets.Count)</h3>
+                <h3>Assets (@FilteredAssets.Count())</h3>
                 <ul class="test-list">
-                    @foreach (var asset in assets.Take(25))
+                    @foreach (var asset in FilteredAssets.Take(25))
                     {
                         <li>@asset</li>
                     }
@@ -80,13 +107,26 @@
 @code {
     private string statusMessage = "Ready.";
     private string assetPath = "";
+    private string assetFilter = "";
     private string selectedDirectory = "";
     private List<string> assets = [];
     private Dictionary<string, string> systemInformation = [];
+    private DateTimeOffset? lastUpdatedAt;
+
+    private IEnumerable<string> FilteredAssets =>
+        string.IsNullOrWhiteSpace(assetFilter)
+            ? assets
+            : assets.Where(asset => asset.Contains(assetFilter, StringComparison.OrdinalIgnoreCase));
 
     private void NavigateTo(string route)
     {
         _navigation.NavigateTo(route, false);
+    }
+
+    private void SetStatus(string message)
+    {
+        statusMessage = message;
+        lastUpdatedAt = DateTimeOffset.Now;
     }
 
     private async Task ListAssetsAsync()
@@ -94,7 +134,7 @@
         try
         {
             assets = (await _platform.ListAssetsAsync()).ToList();
-            statusMessage = $"Loaded {assets.Count} assets.";
+            SetStatus($"Loaded {assets.Count} assets.");
             if (string.IsNullOrWhiteSpace(assetPath))
             {
                 assetPath = assets.FirstOrDefault() ?? string.Empty;
@@ -102,7 +142,7 @@
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
     }
 
@@ -112,18 +152,18 @@
         {
             if (string.IsNullOrWhiteSpace(assetPath))
             {
-                statusMessage = "Provide an asset path first.";
+                SetStatus("Provide an asset path first.");
                 return;
             }
 
             var content = _platform.ReadAssetContent(assetPath);
-            statusMessage = string.IsNullOrWhiteSpace(content)
+            SetStatus(string.IsNullOrWhiteSpace(content)
                 ? "Asset is empty."
-                : $"Asset content preview: {content[..Math.Min(content.Length, 300)]}";
+                : $"Asset content preview: {content[..Math.Min(content.Length, 300)]}");
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
     }
 
@@ -132,13 +172,13 @@
         try
         {
             selectedDirectory = await _platform.PickDirectory() ?? string.Empty;
-            statusMessage = string.IsNullOrWhiteSpace(selectedDirectory)
+            SetStatus(string.IsNullOrWhiteSpace(selectedDirectory)
                 ? "No directory selected."
-                : $"Selected directory: {selectedDirectory}";
+                : $"Selected directory: {selectedDirectory}");
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
     }
 
@@ -148,16 +188,16 @@
         {
             if (string.IsNullOrWhiteSpace(selectedDirectory))
             {
-                statusMessage = "Pick a directory first.";
+                SetStatus("Pick a directory first.");
                 return;
             }
 
             await _platform.OpenDirectory(selectedDirectory);
-            statusMessage = $"Opened directory: {selectedDirectory}";
+            SetStatus($"Opened directory: {selectedDirectory}");
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
     }
 
@@ -166,11 +206,11 @@
         try
         {
             await _platform.SendLocalNotification("Test notification", "This notification was triggered from Test Center.");
-            statusMessage = "Notification sent.";
+            SetStatus("Notification sent.");
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
     }
 
@@ -179,39 +219,110 @@
         try
         {
             var result = await _platform.ScanBarcodeAsync();
-            statusMessage = string.IsNullOrWhiteSpace(result) ? "No barcode scanned." : $"Barcode result: {result}";
+            SetStatus(string.IsNullOrWhiteSpace(result) ? "No barcode scanned." : $"Barcode result: {result}");
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
     }
 
-    private Task RefreshSystemInformation()
+    private async Task RefreshSystemInformation()
     {
         try
         {
+            var storageTotalTask = Task.Run(() => _platform.GetStorage(false).ToFormattedBytes());
+            var storageAvailableTask = Task.Run(() => _platform.GetStorage(true).ToFormattedBytes());
+            var processorTask = Task.Run(_platform.GetProcessor);
+            var ramTask = Task.Run(() => _platform.GetRam().ToFormattedBytes());
+            var graphicsCardTask = Task.Run(() => string.Join(" | ", _platform.GetGraphicsCard()));
+            var osNameTask = Task.Run(_platform.GetOsName);
+            var osVersionTask = Task.Run(_platform.GetOsVersion);
+            var osArchitectureTask = Task.Run(_platform.GetOsArchitecture);
+            var machineNameTask = Task.Run(_platform.GetMachineName);
+            var userNameTask = Task.Run(_platform.GetUserName);
+
+            await Task.WhenAll(
+                storageTotalTask,
+                storageAvailableTask,
+                processorTask,
+                ramTask,
+                graphicsCardTask,
+                osNameTask,
+                osVersionTask,
+                osArchitectureTask,
+                machineNameTask,
+                userNameTask
+            );
+
             systemInformation = new Dictionary<string, string>
             {
-                ["Storage Total"] = _platform.GetStorage(false).ToFormattedBytes(),
-                ["Storage Available"] = _platform.GetStorage(true).ToFormattedBytes(),
-                ["Processor"] = _platform.GetProcessor(),
-                ["RAM"] = _platform.GetRam().ToFormattedBytes(),
-                ["Graphics Card"] = _platform.GetGraphicsCard(),
-                ["OS Name"] = _platform.GetOsName(),
-                ["OS Version"] = _platform.GetOsVersion(),
-                ["OS Architecture"] = _platform.GetOsArchitecture(),
-                ["Machine Name"] = _platform.GetMachineName(),
-                ["User Name"] = _platform.GetUserName()
+                ["Storage Total"] = storageTotalTask.Result,
+                ["Storage Available"] = storageAvailableTask.Result,
+                ["Processor"] = processorTask.Result,
+                ["RAM"] = ramTask.Result,
+                ["Graphics Card"] = graphicsCardTask.Result,
+                ["OS Name"] = osNameTask.Result,
+                ["OS Version"] = osVersionTask.Result,
+                ["OS Architecture"] = osArchitectureTask.Result,
+                ["Machine Name"] = machineNameTask.Result,
+                ["User Name"] = userNameTask.Result
             };
 
-            statusMessage = "System information refreshed.";
+            SetStatus("System information refreshed.");
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            SetStatus(ex.Message);
         }
+    }
 
-        return Task.CompletedTask;
+    private void PickRandomAsset()
+    {
+        try
+        {
+            if (assets.Count == 0)
+            {
+                SetStatus("Load assets first.");
+                return;
+            }
+
+            assetPath = assets[Random.Shared.Next(0, assets.Count)];
+            SetStatus($"Selected random asset: {assetPath}");
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message);
+        }
+    }
+
+    private async Task RunQuickHealthCheckAsync()
+    {
+        try
+        {
+            await ListAssetsAsync();
+            await RefreshSystemInformation();
+            SetStatus($"Health check done. Assets: {assets.Count}, System fields: {systemInformation.Count}.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message);
+        }
+    }
+
+    private void ClearOutput()
+    {
+        assets.Clear();
+        systemInformation.Clear();
+        assetFilter = string.Empty;
+        selectedDirectory = string.Empty;
+        assetPath = string.Empty;
+        SetStatus("Ready.");
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        lastUpdatedAt = DateTimeOffset.Now;
+        return base.OnInitializedAsync();
     }
 }
